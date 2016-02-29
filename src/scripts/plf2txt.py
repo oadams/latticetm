@@ -2,6 +2,8 @@
 
 from __future__ import print_function
 import sys
+import io
+import string
 
 def multiple_end_states(plf):
     """ Verifies that a PLF has only one final state."""
@@ -38,22 +40,36 @@ def from_plf(plf):
         i += 1
     return output_lattice
 
-def convert_file(input_fn, output_fn):
+exclude = set(string.punctuation)
+def process_english(line):
+    return "".join(c.lower() for c in line if c not in exclude)
+
+def convert_file(es_in_fn, es_out_fn, en_in_fn, en_out_fn):
     """ Takes input and output filenames as strings. Reading PLF lattices from
-    the input file outputs lattices in a format to be read by latticelm. """
-    with open(input_fn) as input_file:
-        input_lines = input_file.readlines()
-    with open(output_fn, "w") as output_file:
-        for plf in input_lines:
+    the input file outputs lattices in a format to be read by latticelm.
+    Sometimes there will be empty lattices. In this case, remove the
+    corresponding English line."""
+    with open(es_in_fn) as input_file:
+        es_input_lines = input_file.readlines()
+    with io.open(en_in_fn, encoding="utf-8") as input_file:
+        en_input_lines = input_file.readlines()
+    with open(es_out_fn, "w") as es_out_file, io.open(en_out_fn, "w", encoding="utf-8") as en_out_file:
+        i = 0
+        for i in range(len(es_input_lines)):
+            plf = es_input_lines[i]
             output_lattice = from_plf(plf)
             #print(output_lattice)
             #raw_input()
+            if output_lattice == []:
+                continue
             for line in output_lattice:
-                print(line, file=output_file)
-            print("",file=output_file)
+                print(line, file=es_out_file)
+            print("",file=es_out_file)
+            print(process_english(en_input_lines[i]), file=en_out_file, end=u"")
+            #print(process_english(en_input_lines[i]))
 
 #plf = "((('einen',1.0,1),),(('wettbewerbsbedingten',0.5,2),('wettbewerbs',0.25,1),('wettbewerb',0.25, 1),),(('bedingten',1.0,1),),(('preissturz',0.5,2),('preis',0.5,1),),(('sturz',1.0,1),),)"
 #from_plf(plf)
 
-input_fn, output_fn = sys.argv[1:]
-convert_file(input_fn, output_fn)
+es_in_fn, es_out_fn, en_in_fn, en_out_fn = sys.argv[1:]
+convert_file(es_in_fn, es_out_fn, en_in_fn, en_out_fn)
