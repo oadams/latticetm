@@ -66,6 +66,7 @@ void LexicalTM::Normalize(int epochs) {
       cpd_accumulator_[i][j] = fst::Divide(cpd_accumulator_[i][j],LogWeight(-log(epochs)));
     }
   }
+  /*
   cout << std::fixed << std::setw( 1 ) << std::setprecision( 3 );
   cout << endl << "Average CPD parameters: " << endl;
   cout << "\t";
@@ -81,6 +82,7 @@ void LexicalTM::Normalize(int epochs) {
     cout << endl;
   }
   cout << endl;
+  */
 }
 
 int in(WordId word_id, Sentence sentence) {
@@ -211,7 +213,6 @@ void LexicalTM::ResampleParameters() {
  *`path' property must hold for the weights. But this path property does not
  *hold for log weights it would seem.*/
 void LexicalTM::Dijkstra(const Fst<LogArc> & lattice, MutableFst<LogArc> * shortest_path) {
-  cout << "---DIJKSTRA---" << endl;
   VectorFst<LogArc>::StateId initial_state = lattice.Start();
   assert(initial_state == 0);
   //VectorFst<LogArc>::StateId final_state = lattice.NumStates()-1;
@@ -232,7 +233,7 @@ void LexicalTM::Dijkstra(const Fst<LogArc> & lattice, MutableFst<LogArc> * short
     while(true) {
       if(arc_iter.Done()) break;
       const LogArc& arc = arc_iter.Value();
-      cout << arc.weight << " " << arc.ilabel << " " << arc.olabel << endl;
+      //cout << arc.weight << " " << arc.ilabel << " " << arc.olabel << endl;
       // Expand min_distance if we need to.
       while(arc.nextstate+1 > min_distance.size()) {
         min_distance.push_back(std::numeric_limits<float>::max());
@@ -251,11 +252,11 @@ void LexicalTM::Dijkstra(const Fst<LogArc> & lattice, MutableFst<LogArc> * short
     }
   }
 
-  cout << prev_state << endl;
-  cout << prev_align << endl;
+  //cout << prev_state << endl;
+  //cout << prev_align << endl;
   StringFromBacktrace(prev_state, prev_align);
-  cout << "Len of shortest path: " << min_distance[min_distance.size()-1] << endl;
-  cout << "---------------" << endl;
+  //cout << "Len of shortest path: " << min_distance[min_distance.size()-1] << endl;
+  //cout << "---------------" << endl;
 }
 
 void LexicalTM::StringFromBacktrace(const vector<int> & prev_state, const vector<pair<int,int>> & prev_align) {
@@ -267,7 +268,10 @@ void LexicalTM::StringFromBacktrace(const vector<int> & prev_state, const vector
     foreign_source.push_back(f_vocab_.GetSym(wordid));
     id = prev_state[id];
   }
-  cout << foreign_source << endl;;
+  for(int i = foreign_source.size()-1; i >= 0; i--){
+      cout << foreign_source[i] << " ";
+  }
+  cout << endl;
 }
 
 /** Samples the best path through the lattice using the translations and

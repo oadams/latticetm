@@ -20,21 +20,21 @@ void LatticeLM::PerformTrainingLexTM(const vector<DataLatticePtr> & lattices, Le
   // Perform training
   vector<int> order(lattices.size()); std::iota(order.begin(), order.end(), 0);
   vector<Alignment> alignments(lattices.size());
-  tm.PrintParams();
+  //tm.PrintParams();
   for(int epoch = 1; epoch <= epochs_; epoch++) {
     std::shuffle(order.begin(), order.end(), *GlobalVars::rndeng);
     LLStats ep_stats;
     for(int align_id : order) {
       if(epoch != 1)
         tm.RemoveSample(alignments[align_id]);
-      cout << "align_id: " << align_id << endl;
+      //cout << "align_id: " << align_id << endl;
       alignments[align_id] = tm.CreateSample(*lattices[align_id], ep_stats);
       tm.AddSample(alignments[align_id]);
-      tm.PrintCounts();
+      //tm.PrintCounts();
     }
     cerr << "Finished epoch " << epoch << ": char=" << ep_stats.words_ << ", ppl=" << ep_stats.CalcPPL() << " (s=" << time_.Elapsed() << ")" << endl;
     tm.ResampleParameters();
-    tm.PrintParams();
+    //tm.PrintParams();
   }
   tm.Normalize(epochs_);
   tm.FindBestPaths(lattices);
@@ -90,7 +90,7 @@ int LatticeLM::main(int argc, char** argv) {
 
   // Create the timer
   time_ = Timer();
-  cout << "Started training! (s=" << time_.Elapsed() << ")" << endl;
+  cerr << "Started training! (s=" << time_.Elapsed() << ")" << endl;
 
   // Temporary buffers
   string line;
