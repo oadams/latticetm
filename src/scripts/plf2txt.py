@@ -3,6 +3,17 @@
 from __future__ import print_function
 import sys
 
+def multiple_end_states(plf):
+    """ Verifies that a PLF has only one final state."""
+
+    end_i = len(plf)
+    i = 0
+    for out_edges in plf:
+        for edge in out_edges:
+            if i + edge[2] > end_i:
+                return True
+    return False
+
 def from_plf(plf):
     """ Takes a string representing a single lattice in Python Lattice Format
     (PLF) and outputs a textual representation for use with latticelm."""
@@ -12,6 +23,8 @@ def from_plf(plf):
         plf = eval(plf)
     except:
         return []
+
+    assert(not multiple_end_states(plf))
 
     num_nodes = len(plf)+1 # Add one for the starting node.
 
