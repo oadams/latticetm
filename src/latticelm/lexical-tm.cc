@@ -4,6 +4,7 @@
 #include <iostream>
 #include <cmath>
 #include <iomanip>
+#include <fst/shortest-path.h>
 
 using namespace latticelm;
 using namespace fst;
@@ -92,8 +93,12 @@ int in(WordId word_id, Sentence sentence) {
   return ret;
 }
 
-/** Create a TM based on the parameters that is constrained by the lattice's translation **/
 VectorFst<LogArc> LexicalTM::CreateReducedTM(const DataLattice & lattice) {
+  return LexicalTM::CreateReducedTM(lattice, cpd_);
+}
+
+/** Create a TM based on the parameters that is constrained by the lattice's translation **/
+VectorFst<LogArc> LexicalTM::CreateReducedTM(const DataLattice & lattice, const vector<vector<fst::LogWeight>> & cpd) {
   VectorFst<LogArc> reduced_tm;
   VectorFst<LogArc>::StateId only_state = reduced_tm.AddState();
   reduced_tm.SetStart(only_state);
@@ -112,22 +117,22 @@ VectorFst<LogArc> LexicalTM::CreateReducedTM(const DataLattice & lattice) {
     //    the translation given the foreign word.
     LogWeight total = LogWeight::Zero();
     // First add the probability of an epsilon (ie. null token) on the English side.
-    total = fst::Plus(total, cpd_[0][f_word_id]);
+    total = fst::Plus(total, cpd[0][f_word_id]);
     // Then check each of the English words to see if they are in the
     // translation, and add probability mass if they are
     for(int e_word_id = 1; e_word_id < e_vocab_size_; e_word_id++) {
       int times_in = in(e_word_id, translation);
       for(int i = 0; i < times_in; i++) {
-        total = fst::Plus(total, cpd_[e_word_id][f_word_id]);
+        total = fst::Plus(total, cpd[e_word_id][f_word_id]);
       }
     }
     // 2. Divide the conditional probability of each of the English words by the
     //    aforementioned total when adding a corresponding arc to the WFST.
-    reduced_tm.AddArc(only_state, LogArc(f_word_id, 0, fst::Divide(cpd_[0][f_word_id], total), only_state));
+    reduced_tm.AddArc(only_state, LogArc(f_word_id, 0, fst::Divide(cpd[0][f_word_id], total), only_state));
     for(int e_word_id = 1; e_word_id < e_vocab_size_; e_word_id++) {
       int times_in = in(e_word_id, translation);
       for(int i = 0; i < times_in; i++) {
-        reduced_tm.AddArc(only_state, LogArc(f_word_id, e_word_id, fst::Divide(cpd_[e_word_id][f_word_id], total), only_state));
+        reduced_tm.AddArc(only_state, LogArc(f_word_id, e_word_id, fst::Divide(cpd[e_word_id][f_word_id], total), only_state));
       }
     }
   }
@@ -175,7 +180,6 @@ Alignment LexicalTM::CreateSample(const DataLattice & lattice, LLStats & stats) 
   */
 
   Alignment align = FstToAlign(sample_fst);
-  cout << "align: " << align << endl;
 
   return align;
 
@@ -196,6 +200,98 @@ void LexicalTM::ResampleParameters() {
       cpd_accumulator_[i][j] = fst::Plus(cpd_accumulator_[i][j], cpd_[i][j]);
     }
   }
+}
+
+/** Uses Dijkstra's shortest path algorithm to find the shortest path through
+ * the lattice. This will be used for finding the best source sentence and
+ * alignment in the composed lattice.
+
+ *I'm implementing this because the FST ShortestPath implementation:
+ *http://www.openfst.org/twiki/bin/view/FST/ShortestPathDoc indicates that the
+ *`path' property must hold for the weights. But this path property does not
+ *hold for log weights it would seem.*/
+void LexicalTM::Dijkstra(const Fst<LogArc> & lattice, MutableFst<LogArc> * shortest_path) {
+  cout << "---DIJKSTRA---" << endl;
+  VectorFst<LogArc>::StateId initial_state = lattice.Start();
+  assert(initial_state == 0);
+  //VectorFst<LogArc>::StateId final_state = lattice.NumStates()-1;
+
+  vector<float> min_distance;
+  min_distance.push_back(0.0);
+  vector<int> prev_state;
+  prev_state.push_back(-1);
+  vector<pair<int,int>> prev_align;
+  prev_align.push_back({-1,-1});
+  set<pair<float,VectorFst<LogArc>::StateId>> active_vertices;
+  active_vertices.insert( {0.0, initial_state} );
+
+  while(!active_vertices.empty()) {
+    int cur = active_vertices.begin()->second;
+    active_vertices.erase(active_vertices.begin());
+    fst::ArcIterator<Fst<LogArc>> arc_iter(lattice, cur);
+    while(true) {
+      if(arc_iter.Done()) break;
+      const LogArc& arc = arc_iter.Value();
+      cout << arc.weight << " " << arc.ilabel << " " << arc.olabel << endl;
+      // Expand min_distance if we need to.
+      while(arc.nextstate+1 > min_distance.size()) {
+        min_distance.push_back(std::numeric_limits<float>::max());
+        prev_state.push_back(-1);
+        pair<int,int> nullpair = {-1,-1};
+        prev_align.push_back(nullpair);
+      }
+      if(fst::Times(min_distance[cur],arc.weight).Value() < min_distance[arc.nextstate]) {
+        active_vertices.erase( { min_distance[arc.nextstate], arc.nextstate } );
+        min_distance[arc.nextstate] = fst::Times(min_distance[cur], arc.weight).Value();
+        prev_state[arc.nextstate] = cur;
+        prev_align[arc.nextstate] = {arc.ilabel, arc.olabel};
+        active_vertices.insert( { min_distance[arc.nextstate], arc.nextstate } );
+      }
+      arc_iter.Next();
+    }
+  }
+
+  cout << prev_state << endl;
+  cout << prev_align << endl;
+  StringFromBacktrace(prev_state, prev_align);
+  cout << "Len of shortest path: " << min_distance[min_distance.size()-1] << endl;
+  cout << "---------------" << endl;
+}
+
+void LexicalTM::StringFromBacktrace(const vector<int> & prev_state, const vector<pair<int,int>> & prev_align) {
+  int id = prev_state.size()-1;
+  vector<string> foreign_source;
+  while(true) {
+    int wordid = prev_align[id].first;
+    if(wordid == -1) break;
+    foreign_source.push_back(f_vocab_.GetSym(wordid));
+    id = prev_state[id];
+  }
+  cout << foreign_source << endl;;
+}
+
+/** Samples the best path through the lattice using the translations and
+* average translation model parameters to inform the sample. **/
+void LexicalTM::FindBestPaths(const vector<DataLatticePtr> & lattices) {
+
+  long i = 1;
+  for (auto latticep : lattices) {
+      DataLattice lattice = *latticep;
+      // Perform reduction on TM to make it conform to the lattice.translation_
+      // %TODO: Make this use the normalized TM params.
+      VectorFst<LogArc> reduced_tm = CreateReducedTM(lattice, cpd_accumulator_);
+      // Compose the lattice with the reduced tm.
+      ComposeFst<LogArc> composed_fst(lattice.GetFst(), reduced_tm);
+      VectorFst<LogArc> vecfst(composed_fst);
+      vecfst.Write("composedforbestpath.fst");
+      // Find the shortest path.
+      VectorFst<LogArc> * shortest_path = new VectorFst<LogArc>;
+      //VectorFst<StdArc> tropfst(vecfst);
+      Dijkstra(vecfst, shortest_path);
+      //shortest_path->Write("sample_" + to_string(i) + ".fst");
+      i++;
+  }
+
 }
 
 void LexicalTM::TestLogWeightSampling() {

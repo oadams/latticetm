@@ -37,6 +37,7 @@ void LatticeLM::PerformTrainingLexTM(const vector<DataLatticePtr> & lattices, Le
     tm.PrintParams();
   }
   tm.Normalize(epochs_);
+  tm.FindBestPaths(lattices);
 }
 
 template <class LM>
