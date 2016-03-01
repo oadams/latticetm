@@ -5,6 +5,7 @@
 #include <cmath>
 #include <iomanip>
 #include <fst/shortest-path.h>
+#include <latticelm/timer.h>
 
 using namespace latticelm;
 using namespace fst;
@@ -43,8 +44,12 @@ void LexicalTM::PrintCounts() {
 }
 
 void LexicalTM::PrintParams() {
+  PrintParams(cpd_);
+}
+
+void LexicalTM::PrintParams(vector<vector<fst::LogWeight>> cpd) {
   cout << std::fixed << std::setw( 1 ) << std::setprecision( 3 );
-  cout << endl << "CPD parameters: " << endl;
+  //cout << endl << "CPD parameters: " << endl;
   cout << "\t";
   for(int j = 0; j < f_vocab_size_; j++) {
     cout << f_vocab_.GetSym(j) << "\t";
@@ -53,7 +58,7 @@ void LexicalTM::PrintParams() {
   for(int i = 0; i < e_vocab_size_; i++) {
     cout << e_vocab_.GetSym(i) << "\t";
     for(int j = 0; j < f_vocab_size_; j++) {
-      cout << exp(-1*cpd_[i][j].Value()) << "\t";
+      cout << exp(-1*cpd[i][j].Value()) << "\t";
     }
     cout << endl;
   }
@@ -66,6 +71,8 @@ void LexicalTM::Normalize(int epochs) {
       cpd_accumulator_[i][j] = fst::Divide(cpd_accumulator_[i][j],LogWeight(-log(epochs)));
     }
   }
+  cout << endl << "Avg. CPD parameters: " << endl;
+  PrintParams(cpd_accumulator_);
   /*
   cout << std::fixed << std::setw( 1 ) << std::setprecision( 3 );
   cout << endl << "Average CPD parameters: " << endl;
@@ -108,6 +115,31 @@ VectorFst<LogArc> LexicalTM::CreateReducedTM(const DataLattice & lattice, const 
 
   Sentence translation = lattice.GetTranslation();
 
+  for(int f = 1; f < f_vocab_size_; f++) {
+    reduced_tm.AddArc(only_state, LogArc(f, 0, cpd[0][f], only_state));
+    for(int e = 1; e < f_vocab_size_; e++) {
+      int times_in = in(e, translation);
+      for(int i = 0; i < times_in; i++) {
+        reduced_tm.AddArc(only_state, LogArc(f, e, cpd[e][f], only_state));
+      }
+    }
+  }
+  return reduced_tm;
+}
+
+/** Create a TM based on the parameters that is constrained by the lattice's translation **/
+/*
+VectorFst<LogArc> LexicalTM::CreateReducedTM(const DataLattice & lattice, const vector<vector<fst::LogWeight>> & cpd) {
+  Timer time = Timer();
+  VectorFst<LogArc> reduced_tm;
+  VectorFst<LogArc>::StateId only_state = reduced_tm.AddState();
+  reduced_tm.SetStart(only_state);
+  reduced_tm.SetFinal(only_state, LogArc::Weight::One());
+
+  Sentence translation = lattice.GetTranslation();
+
+  cerr << "preloop: " << time.Elapsed() << endl;
+
   // %TODO: Perhaps this should be optimized at some point.
 
   // Starting at 1 because 0 represents an epsilon transition and we don't
@@ -137,10 +169,12 @@ VectorFst<LogArc> LexicalTM::CreateReducedTM(const DataLattice & lattice, const 
         reduced_tm.AddArc(only_state, LogArc(f_word_id, e_word_id, fst::Divide(cpd[e_word_id][f_word_id], total), only_state));
       }
     }
+    cerr << "loop " << f_word_id << ": " << time.Elapsed() << endl;
   }
 
   return reduced_tm;
 }
+*/
 
 Alignment LexicalTM::CreateSample(const DataLattice & lattice, LLStats & stats) {
 
@@ -148,25 +182,26 @@ Alignment LexicalTM::CreateSample(const DataLattice & lattice, LLStats & stats) 
   //exit(0);
 
   // Perform reduction on TM to make it conform to the lattice.translation_
+  Timer time;
+  time = Timer();
   VectorFst<LogArc> reduced_tm = CreateReducedTM(lattice);
+  cerr << "Creating reduced tm took: " << time.Elapsed() << endl;
   reduced_tm.Write("reduced_tm.fst");
 
-  lattice.GetFst().Write("lattice.fst");
+  //lattice.GetFst().Write("lattice.fst");
 
   // Compose the lattice with the reduced tm.
   ComposeFst<LogArc> composed_fst(lattice.GetFst(), reduced_tm);
-  VectorFst<LogArc> vecfst(composed_fst);
-  vecfst.Write("composed.fst");
-  //const SymbolTable* isyms = composed_fst.InputSymbols();
-  //const SymbolTable* osyms = composed_fst.OutputSymbols();
-  //const string ifn("isyms.txt");
-  //composed_fst.InputSymbols()->WriteText(ifn);
-  //composed_fst.OutputSymbols()->WriteText("osyms.txt");
+  //VectorFst<LogArc> vecfst(composed_fst);
+  //vecfst.Write("composed.fst");
 
   // Sample from the composed Fst.
+  Timer time2;
+  time2 = Timer();
   VectorFst<LogArc> sample_fst;
   /*stats.lik_ +=*/ SampGen(composed_fst, sample_fst);
-  sample_fst.Write("sample.fst");
+  //sample_fst.Write("sample.fst");
+  cerr << "Sampling took: " << time2.Elapsed() << endl;
 
   /*
   vector<int> counts = {0,0,0,0,0,0,0};
@@ -181,7 +216,9 @@ Alignment LexicalTM::CreateSample(const DataLattice & lattice, LLStats & stats) 
   exit(0);
   */
 
+  Timer time3 = Timer();
   Alignment align = FstToAlign(sample_fst);
+  cerr << "FstToAlign took: " << time3.Elapsed() << endl;
 
   return align;
 

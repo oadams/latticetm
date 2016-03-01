@@ -59,6 +59,7 @@ public:
 
   // Helpful methods
   void PrintParams();
+  void PrintParams(vector<vector<fst::LogWeight>> cpd);
   void PrintCounts();
 
 protected:
