@@ -51,8 +51,6 @@ public:
   fst::VectorFst<fst::LogArc> CreateReducedTM(const DataLattice & lattice, const vector<vector<fst::LogWeight>> & cpd);
   void FindBestPaths(const vector<DataLatticePtr> & lattices);
   void Normalize(int epochs);
-  void Dijkstra(const fst::Fst<fst::LogArc> & lattice, fst::MutableFst<fst::LogArc> * shortest_path);
-  void StringFromBacktrace(const vector<int> & prev_state, const vector<pair<int,int>> & prev_align);
 
   // Test methods to be moved elsewhere later
   void TestLogWeightSampling();

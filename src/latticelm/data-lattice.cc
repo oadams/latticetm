@@ -79,6 +79,7 @@ vector<DataLatticePtr> DataLattice::ReadFromOpenFSTFile(const std::string & file
       lineid++;
       // Otherwise wrap up this lattice and initialize a new one.
       ptr->fst_.SetFinal(to_state, LogArc::Weight::One());
+      //DataLattice::Dijkstra(ptr->fst_, dict);
       ret.push_back(ptr);
       ptr = DataLatticePtr(new DataLattice);
       VectorFst<LogArc>::StateId last_id = ptr->fst_.AddState();
@@ -107,6 +108,7 @@ vector<DataLatticePtr> DataLattice::ReadFromOpenFSTFile(const std::string & file
   }
   // Wrap up the last uncompleted lattice.
   ptr->fst_.SetFinal(to_state, LogArc::Weight::One());
+  //DataLattice::Dijkstra(ptr->fst_, dict);
   ret.push_back(ptr);
   return ret;
 }
@@ -124,4 +126,77 @@ void DataLattice::ReadTranslations(vector<DataLatticePtr> data_lattices, const s
     data_lattices[i++]->SetTranslation(sent);
   }
   if(i != data_lattices.size()) THROW_ERROR("Number of lattices and number of translations are not equal.");
+}
+
+/** Uses Dijkstra's shortest path algorithm to find the shortest path through
+ * the lattice. This will be used for finding the best source sentence and
+ * alignment in the composed lattice.
+
+ * I'm implementing this because the FST ShortestPath implementation:
+ * http://www.openfst.org/twiki/bin/view/FST/ShortestPathDoc indicates that the
+ * `path' property must hold for the weights. But this path property does not
+ * hold for log weights it would seem.
+
+ * Though I could convert Fst<LogArc>s to Fst<StdArc>s, I had pretty much
+ * implemented this by the time I found out that would be equivalent.*/
+void DataLattice::Dijkstra(const Fst<LogArc> & lattice, SymbolSet<string> & dict) {
+  VectorFst<LogArc>::StateId initial_state = lattice.Start();
+  assert(initial_state == 0);
+  //VectorFst<LogArc>::StateId final_state = lattice.NumStates()-1;
+
+  vector<float> min_distance;
+  min_distance.push_back(0.0);
+  vector<int> prev_state;
+  prev_state.push_back(-1);
+  vector<pair<int,int>> prev_align;
+  prev_align.push_back({-1,-1});
+  set<pair<float,VectorFst<LogArc>::StateId>> active_vertices;
+  active_vertices.insert( {0.0, initial_state} );
+
+  while(!active_vertices.empty()) {
+    int cur = active_vertices.begin()->second;
+    active_vertices.erase(active_vertices.begin());
+    fst::ArcIterator<Fst<LogArc>> arc_iter(lattice, cur);
+    while(true) {
+      if(arc_iter.Done()) break;
+      const LogArc& arc = arc_iter.Value();
+      //cout << arc.weight << " " << arc.ilabel << " " << arc.olabel << endl;
+      // Expand min_distance if we need to.
+      while(arc.nextstate+1 > min_distance.size()) {
+        min_distance.push_back(std::numeric_limits<float>::max());
+        prev_state.push_back(-1);
+        pair<int,int> nullpair = {-1,-1};
+        prev_align.push_back(nullpair);
+      }
+      if(fst::Times(min_distance[cur],arc.weight).Value() < min_distance[arc.nextstate]) {
+        active_vertices.erase( { min_distance[arc.nextstate], arc.nextstate } );
+        min_distance[arc.nextstate] = fst::Times(min_distance[cur], arc.weight).Value();
+        prev_state[arc.nextstate] = cur;
+        prev_align[arc.nextstate] = {arc.ilabel, arc.olabel};
+        active_vertices.insert( { min_distance[arc.nextstate], arc.nextstate } );
+      }
+      arc_iter.Next();
+    }
+  }
+
+  //cout << prev_state << endl;
+  //cout << prev_align << endl;
+  StringFromBacktrace(prev_state, prev_align, dict);
+  //cout << "Len of shortest path: " << min_distance[min_distance.size()-1] << endl;
+  //cout << "---------------" << endl;
+}
+
+void DataLattice::StringFromBacktrace(const vector<int> & prev_state, const vector<pair<int,int>> & prev_align, SymbolSet<string> & dict) {
+  int id = prev_state.size()-1;
+  vector<string> foreign_source;
+  while(true) {
+    int wordid = prev_align[id].first;
+    if(wordid == -1) break;
+    foreign_source.push_back(dict.GetSym(wordid));
+    id = prev_state[id];
+  }
+  for(int i = foreign_source.size()-1; i >= 0; i--){
+      cout << foreign_source[i] << " ";
+  }
+  cout << endl;
 }

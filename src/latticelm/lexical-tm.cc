@@ -6,6 +6,7 @@
 #include <iomanip>
 #include <fst/shortest-path.h>
 #include <latticelm/timer.h>
+#include <latticelm/data-lattice.h>
 
 using namespace latticelm;
 using namespace fst;
@@ -71,7 +72,7 @@ void LexicalTM::Normalize(int epochs) {
       cpd_accumulator_[i][j] = fst::Divide(cpd_accumulator_[i][j],LogWeight(-log(epochs)));
     }
   }
-  cout << endl << "Avg. CPD parameters: " << endl;
+  //cout << endl << "Avg. CPD parameters: " << endl;
   //PrintParams(cpd_accumulator_);
   /*
   cout << std::fixed << std::setw( 1 ) << std::setprecision( 3 );
@@ -230,6 +231,7 @@ void LexicalTM::ResampleParameters() {
   // We assume a uniform distribution, base_dist_, which has been initialized to uniform.
   for(int i = 0; i < e_vocab_size_; i++) {
     double row_total = 0;
+    // TODO Perhaps superfluous? This row_total should just end up adding to 1.
     for(int j = 0; j < f_vocab_size_; j++) {
       row_total += counts_[i][j];
     }
@@ -242,75 +244,6 @@ void LexicalTM::ResampleParameters() {
   }
 }
 
-/** Uses Dijkstra's shortest path algorithm to find the shortest path through
- * the lattice. This will be used for finding the best source sentence and
- * alignment in the composed lattice.
-
- *I'm implementing this because the FST ShortestPath implementation:
- *http://www.openfst.org/twiki/bin/view/FST/ShortestPathDoc indicates that the
- *`path' property must hold for the weights. But this path property does not
- *hold for log weights it would seem.*/
-void LexicalTM::Dijkstra(const Fst<LogArc> & lattice, MutableFst<LogArc> * shortest_path) {
-  VectorFst<LogArc>::StateId initial_state = lattice.Start();
-  assert(initial_state == 0);
-  //VectorFst<LogArc>::StateId final_state = lattice.NumStates()-1;
-
-  vector<float> min_distance;
-  min_distance.push_back(0.0);
-  vector<int> prev_state;
-  prev_state.push_back(-1);
-  vector<pair<int,int>> prev_align;
-  prev_align.push_back({-1,-1});
-  set<pair<float,VectorFst<LogArc>::StateId>> active_vertices;
-  active_vertices.insert( {0.0, initial_state} );
-
-  while(!active_vertices.empty()) {
-    int cur = active_vertices.begin()->second;
-    active_vertices.erase(active_vertices.begin());
-    fst::ArcIterator<Fst<LogArc>> arc_iter(lattice, cur);
-    while(true) {
-      if(arc_iter.Done()) break;
-      const LogArc& arc = arc_iter.Value();
-      //cout << arc.weight << " " << arc.ilabel << " " << arc.olabel << endl;
-      // Expand min_distance if we need to.
-      while(arc.nextstate+1 > min_distance.size()) {
-        min_distance.push_back(std::numeric_limits<float>::max());
-        prev_state.push_back(-1);
-        pair<int,int> nullpair = {-1,-1};
-        prev_align.push_back(nullpair);
-      }
-      if(fst::Times(min_distance[cur],arc.weight).Value() < min_distance[arc.nextstate]) {
-        active_vertices.erase( { min_distance[arc.nextstate], arc.nextstate } );
-        min_distance[arc.nextstate] = fst::Times(min_distance[cur], arc.weight).Value();
-        prev_state[arc.nextstate] = cur;
-        prev_align[arc.nextstate] = {arc.ilabel, arc.olabel};
-        active_vertices.insert( { min_distance[arc.nextstate], arc.nextstate } );
-      }
-      arc_iter.Next();
-    }
-  }
-
-  //cout << prev_state << endl;
-  //cout << prev_align << endl;
-  StringFromBacktrace(prev_state, prev_align);
-  //cout << "Len of shortest path: " << min_distance[min_distance.size()-1] << endl;
-  //cout << "---------------" << endl;
-}
-
-void LexicalTM::StringFromBacktrace(const vector<int> & prev_state, const vector<pair<int,int>> & prev_align) {
-  int id = prev_state.size()-1;
-  vector<string> foreign_source;
-  while(true) {
-    int wordid = prev_align[id].first;
-    if(wordid == -1) break;
-    foreign_source.push_back(f_vocab_.GetSym(wordid));
-    id = prev_state[id];
-  }
-  for(int i = foreign_source.size()-1; i >= 0; i--){
-      cout << foreign_source[i] << " ";
-  }
-  cout << endl;
-}
 
 /** Samples the best path through the lattice using the translations and
 * average translation model parameters to inform the sample. **/
@@ -329,7 +262,7 @@ void LexicalTM::FindBestPaths(const vector<DataLatticePtr> & lattices) {
       // Find the shortest path.
       VectorFst<LogArc> * shortest_path = new VectorFst<LogArc>;
       //VectorFst<StdArc> tropfst(vecfst);
-      Dijkstra(vecfst, shortest_path);
+      DataLattice::Dijkstra(vecfst, f_vocab_);
       //shortest_path->Write("sample_" + to_string(i) + ".fst");
       i++;
   }
