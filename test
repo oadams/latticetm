@@ -1,0 +1,1 @@
+./src/latticelm/latticelm --train_file data/fisher_test.es.lat --trans_file data/fisher_test.en.0.nopunc.lower --epochs 100 --beam 1 --char_n 1 --word_n 1 --lattice_weight 1.0 --file_format openfst --model_type lextm --concentration 0.5
