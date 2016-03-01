@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <set>
 #include <memory>
 #include <sstream>
 #include <iterator>
@@ -35,10 +36,18 @@ public:
     translation_ = translation;
   }
 
+  const set<WordId> GetFWordIds() const {
+    return f_wordids_;
+  }
+
 protected:
   fst::VectorFst<LogArc> fst_;
   // A word-tokenized English translation for building translation models.
   Sentence translation_;
+  // A set of WordIds on the foreign side that indicate foreign tokens that
+  // occur in this lattice. This is used to optimize the creation of reduced
+  // TMs for composition so that they don't have any superfluous arcs.
+  set<WordId> f_wordids_;
 
 };
 

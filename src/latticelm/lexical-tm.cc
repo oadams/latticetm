@@ -72,7 +72,7 @@ void LexicalTM::Normalize(int epochs) {
     }
   }
   cout << endl << "Avg. CPD parameters: " << endl;
-  PrintParams(cpd_accumulator_);
+  //PrintParams(cpd_accumulator_);
   /*
   cout << std::fixed << std::setw( 1 ) << std::setprecision( 3 );
   cout << endl << "Average CPD parameters: " << endl;
@@ -92,6 +92,7 @@ void LexicalTM::Normalize(int epochs) {
   */
 }
 
+/** Gives the number of times a word_id occurred in a sentence.*/
 int in(WordId word_id, Sentence sentence) {
   int ret = 0;
   for(int i = 0; i < sentence.size(); i++) {
@@ -115,7 +116,7 @@ VectorFst<LogArc> LexicalTM::CreateReducedTM(const DataLattice & lattice, const 
 
   Sentence translation = lattice.GetTranslation();
 
-  for(int f = 1; f < f_vocab_size_; f++) {
+  for(int f : lattice.GetFWordIds()) {
     reduced_tm.AddArc(only_state, LogArc(f, 0, cpd[0][f], only_state));
     for(int e = 1; e < f_vocab_size_; e++) {
       int times_in = in(e, translation);

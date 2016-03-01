@@ -37,6 +37,7 @@ vector<DataLatticePtr> DataLattice::ReadFromTextFile(const std::string & filenam
     for(auto wid : sent) {
       next_id = ptr->fst_.AddState();
       ptr->fst_.AddArc(last_id, LogArc(wid, wid, 0.f, next_id));
+      ptr->f_wordids_.insert(wid);
       last_id = next_id;
     }
     ptr->fst_.SetFinal(last_id, LogArc::Weight::One());
@@ -67,12 +68,15 @@ vector<DataLatticePtr> DataLattice::ReadFromOpenFSTFile(const std::string & file
   ptr->fst_.SetStart(last_id);
   VectorFst<LogArc>::StateId num_states = last_id + 1;
   VectorFst<LogArc>::StateId to_state;
+  int lineid = 0;
   while(getline(in, line)) {
+    lineid++;
     if(line == "") {
       // If there are no more lines after this, let's leave this loop.
       if(!getline(in, line)) {
         break;
       }
+      lineid++;
       // Otherwise wrap up this lattice and initialize a new one.
       ptr->fst_.SetFinal(to_state, LogArc::Weight::One());
       ret.push_back(ptr);
@@ -85,7 +89,8 @@ vector<DataLatticePtr> DataLattice::ReadFromOpenFSTFile(const std::string & file
     vector<string> line_tokens;
     boost::split(line_tokens, line, boost::is_any_of("\t "), boost::token_compress_on);
     if(line_tokens.size() != 5) {
-        THROW_ERROR("Ill-formed FST input. Each line must consist of 5 tokens tab or space delimited.")
+      cerr << "line " << lineid << ": " << line_tokens << endl;
+      THROW_ERROR("Ill-formed FST input. Each line must consist of 5 tokens tab or space delimited.")
     }
     VectorFst<LogArc>::StateId from_state = stoi(line_tokens[0]);
     to_state = stoi(line_tokens[1]);
@@ -98,6 +103,7 @@ vector<DataLatticePtr> DataLattice::ReadFromOpenFSTFile(const std::string & file
       num_states += 1;
     }
     ptr->fst_.AddArc(from_state, LogArc(in, out, weight, to_state));
+    ptr->f_wordids_.insert(in);
   }
   // Wrap up the last uncompleted lattice.
   ptr->fst_.SetFinal(to_state, LogArc::Weight::One());

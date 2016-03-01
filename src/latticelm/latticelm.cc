@@ -24,10 +24,13 @@ void LatticeLM::PerformTrainingLexTM(const vector<DataLatticePtr> & lattices, Le
   for(int epoch = 1; epoch <= epochs_; epoch++) {
     std::shuffle(order.begin(), order.end(), *GlobalVars::rndeng);
     LLStats ep_stats;
+    int align_count = 0;
     for(int align_id : order) {
+      align_count++;
       if(epoch != 1)
         tm.RemoveSample(alignments[align_id]);
-      //cout << "align_id: " << align_id << endl;
+      cerr << "align " << align_count << ", align_id: " << align_id << endl;
+      cerr << "time: " << time_.Elapsed() << endl;
       alignments[align_id] = tm.CreateSample(*lattices[align_id], ep_stats);
       tm.AddSample(alignments[align_id]);
       //tm.PrintCounts();
