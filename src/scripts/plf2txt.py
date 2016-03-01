@@ -1,4 +1,5 @@
 #!/usr/bin/python
+# -*- coding: UTF-8 -*-
 
 from __future__ import print_function
 import sys
@@ -41,8 +42,10 @@ def from_plf(plf):
     return output_lattice
 
 exclude = set(string.punctuation)
-def process_english(line):
-    return "".join(c.lower() for c in line if c not in exclude)
+exclude.add(u"¿")
+
+def remove_punctuation(line):
+    return "".join(c for c in line if c not in exclude)
 
 def convert_file(es_in_fn, es_out_fn, en_in_fn, en_out_fn):
     """ Takes input and output filenames as strings. Reading PLF lattices from
@@ -65,11 +68,8 @@ def convert_file(es_in_fn, es_out_fn, en_in_fn, en_out_fn):
             for line in output_lattice:
                 print(line, file=es_out_file)
             print("",file=es_out_file)
-            print(process_english(en_input_lines[i]), file=en_out_file, end=u"")
-            #print(process_english(en_input_lines[i]))
+            print(remove_punctuation(en_input_lines[i]).lower(), file=en_out_file, end=u"")
 
-#plf = "((('einen',1.0,1),),(('wettbewerbsbedingten',0.5,2),('wettbewerbs',0.25,1),('wettbewerb',0.25, 1),),(('bedingten',1.0,1),),(('preissturz',0.5,2),('preis',0.5,1),),(('sturz',1.0,1),),)"
-#from_plf(plf)
-
-es_in_fn, es_out_fn, en_in_fn, en_out_fn = sys.argv[1:]
-convert_file(es_in_fn, es_out_fn, en_in_fn, en_out_fn)
+if __name__ == "__main__":
+    es_in_fn, es_out_fn, en_in_fn, en_out_fn = sys.argv[1:]
+    convert_file(es_in_fn, es_out_fn, en_in_fn, en_out_fn)
