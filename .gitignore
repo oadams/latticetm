@@ -39,3 +39,5 @@ src/latticelm/config.h
 src/test/test-latticelm
 test-driver
 stamp-h1
+*.pyc
+data
