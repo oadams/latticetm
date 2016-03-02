@@ -117,12 +117,25 @@ VectorFst<LogArc> LexicalTM::CreateReducedTM(const DataLattice & lattice, const 
 
   Sentence translation = lattice.GetTranslation();
 
+  LogWeight total = LogWeight::Zero();
   for(int f : lattice.GetFWordIds()) {
-    reduced_tm.AddArc(only_state, LogArc(f, 0, cpd[0][f], only_state));
-    for(int e = 1; e < f_vocab_size_; e++) {
-      int times_in = in(e, translation);
-      for(int i = 0; i < times_in; i++) {
-        reduced_tm.AddArc(only_state, LogArc(f, e, cpd[e][f], only_state));
+    total = fst::Plus(total, cpd[0][f]);
+  }
+  for(int f : lattice.GetFWordIds()) {
+    reduced_tm.AddArc(only_state, LogArc(f, 0, fst::Divide(cpd[0][f], total), only_state));
+  }
+  for(int e = 1; e < e_vocab_size_; e++) {
+    LogWeight total = LogWeight::Zero();
+    int times_in = in(e, translation);
+    for(int i = 0; i < times_in; i++) {
+      for(int f : lattice.GetFWordIds()) {
+        total = fst::Plus(total, cpd[e][f]);
+      }
+    }
+    if(times_in > 0) {
+      for(int f : lattice.GetFWordIds()) {
+        LogWeight dupCoef = fst::LogWeight(-1*log(times_in)); // So that we can multiply the weight of the arc by the number of times we see the English word.
+        reduced_tm.AddArc(only_state, LogArc(f, e, fst::Divide(fst::Times(dupCoef, cpd[e][f]), total), only_state));
       }
     }
   }
