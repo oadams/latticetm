@@ -139,7 +139,7 @@ void DataLattice::ReadTranslations(vector<DataLatticePtr> data_lattices, const s
 
  * Though I could convert Fst<LogArc>s to Fst<StdArc>s, I had pretty much
  * implemented this by the time I found out that would be equivalent.*/
-void DataLattice::Dijkstra(const Fst<LogArc> & lattice, SymbolSet<string> & dict) {
+void DataLattice::Dijkstra(const Fst<LogArc> & lattice, SymbolSet<string> & dict, SymbolSet<string> & trans_dict) {
   VectorFst<LogArc>::StateId initial_state = lattice.Start();
   assert(initial_state == 0);
   //VectorFst<LogArc>::StateId final_state = lattice.NumStates()-1;
@@ -181,7 +181,8 @@ void DataLattice::Dijkstra(const Fst<LogArc> & lattice, SymbolSet<string> & dict
 
   //cout << prev_state << endl;
   //cout << prev_align << endl;
-  StringFromBacktrace(prev_state, prev_align, dict);
+  //StringFromBacktrace(prev_state, prev_align, dict);
+  AlignmentFromBacktrace(prev_state, prev_align, dict, trans_dict);
   //cout << "Len of shortest path: " << min_distance[min_distance.size()-1] << endl;
   //cout << "---------------" << endl;
 }
@@ -197,6 +198,22 @@ void DataLattice::StringFromBacktrace(const vector<int> & prev_state, const vect
   }
   for(int i = foreign_source.size()-1; i >= 0; i--){
       cout << foreign_source[i] << " ";
+  }
+  cout << endl;
+}
+
+void DataLattice::AlignmentFromBacktrace(const vector<int> & prev_state, const vector<pair<int,int>> & prev_align, SymbolSet<string> & dict, SymbolSet<string> & trans_dict) {
+  int id = prev_state.size()-1;
+  vector<pair<string,string>> alignments;
+  while(true) {
+    int f_wordid = prev_align[id].first;
+    int e_wordid = prev_align[id].second;
+    if(f_wordid == -1) break;
+    alignments.push_back({dict.GetSym(f_wordid), trans_dict.GetSym(e_wordid)});
+    id = prev_state[id];
+  }
+  for(int i = alignments.size()-1; i >=0; i--) {
+    cout << alignments[i] << " ";
   }
   cout << endl;
 }

@@ -277,7 +277,7 @@ void LexicalTM::FindBestPaths(const vector<DataLatticePtr> & lattices) {
       // Find the shortest path.
       VectorFst<LogArc> * shortest_path = new VectorFst<LogArc>;
       //VectorFst<StdArc> tropfst(vecfst);
-      DataLattice::Dijkstra(vecfst, f_vocab_);
+      DataLattice::Dijkstra(vecfst, f_vocab_, e_vocab_);
       //shortest_path->Write("sample_" + to_string(i) + ".fst");
       i++;
   }

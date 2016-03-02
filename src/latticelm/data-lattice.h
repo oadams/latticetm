@@ -40,8 +40,9 @@ public:
     return f_wordids_;
   }
 
-  static void Dijkstra(const fst::Fst<fst::LogArc> & lattice, SymbolSet<string> & dict);
+  static void Dijkstra(const fst::Fst<fst::LogArc> & lattice, SymbolSet<string> & dict, SymbolSet<string> & trans_dict);
   static void StringFromBacktrace(const vector<int> & prev_state, const vector<pair<int,int>> & prev_align, SymbolSet<string> & dict);
+  static void AlignmentFromBacktrace(const vector<int> & prev_state, const vector<pair<int,int>> & prev_align, SymbolSet<string> & dict, SymbolSet<string> & trans_dict);
 
 protected:
   fst::VectorFst<LogArc> fst_;
