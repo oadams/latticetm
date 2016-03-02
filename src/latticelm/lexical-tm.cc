@@ -199,10 +199,7 @@ Alignment LexicalTM::CreateSample(const DataLattice & lattice, LLStats & stats) 
   //exit(0);
 
   // Perform reduction on TM to make it conform to the lattice.translation_
-  Timer time;
-  time = Timer();
   VectorFst<LogArc> reduced_tm = CreateReducedTM(lattice);
-  cerr << "Creating reduced tm took: " << time.Elapsed() << endl;
   reduced_tm.Write("reduced_tm.fst");
 
   //lattice.GetFst().Write("lattice.fst");
@@ -213,12 +210,9 @@ Alignment LexicalTM::CreateSample(const DataLattice & lattice, LLStats & stats) 
   //vecfst.Write("composed.fst");
 
   // Sample from the composed Fst.
-  Timer time2;
-  time2 = Timer();
   VectorFst<LogArc> sample_fst;
   /*stats.lik_ +=*/ SampGen(composed_fst, sample_fst);
   //sample_fst.Write("sample.fst");
-  cerr << "Sampling took: " << time2.Elapsed() << endl;
 
   /*
   vector<int> counts = {0,0,0,0,0,0,0};
@@ -233,9 +227,7 @@ Alignment LexicalTM::CreateSample(const DataLattice & lattice, LLStats & stats) 
   exit(0);
   */
 
-  Timer time3 = Timer();
   Alignment align = FstToAlign(sample_fst);
-  cerr << "FstToAlign took: " << time3.Elapsed() << endl;
 
   return align;
 
