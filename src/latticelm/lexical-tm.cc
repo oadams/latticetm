@@ -139,6 +139,8 @@ VectorFst<LogArc> LexicalTM::CreateReducedTM(const DataLattice & lattice, const 
       }
     }
   }
+  //ArcSortFst<LogArc, ILabelCompare<LogArc>>(reduced_tm, ILabelCompare<LogArc>());
+  ArcSort(&reduced_tm, ILabelCompare<LogArc>());
   return reduced_tm;
 }
 
