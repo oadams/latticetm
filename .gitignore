@@ -41,3 +41,4 @@ test-driver
 stamp-h1
 *.pyc
 data
+*.fst
