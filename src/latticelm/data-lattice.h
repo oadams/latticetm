@@ -41,7 +41,7 @@ public:
   }
 
   static void Dijkstra(const fst::Fst<fst::LogArc> & lattice, vector<int> & prev_state, vector<pair<int,int>> & prev_align, SymbolSet<string> & dict, SymbolSet<string> & trans_dict);
-  static void StringFromBacktrace(const vector<int> & prev_state, const vector<pair<int,int>> & prev_align, SymbolSet<string> & dict);
+  static void StringFromBacktrace(const vector<int> & prev_state, const vector<pair<int,int>> & prev_align, SymbolSet<string> & dict, ostream & out_stream);
   static void AlignmentFromBacktrace(const vector<int> & prev_state, const vector<pair<int,int>> & prev_align, SymbolSet<string> & dict, SymbolSet<string> & trans_dict, ofstream & align_file);
 
 protected:

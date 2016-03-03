@@ -50,6 +50,7 @@ public:
   fst::VectorFst<fst::LogArc> CreateReducedTM(const DataLattice & lattice);
   fst::VectorFst<fst::LogArc> CreateReducedTM(const DataLattice & lattice, const vector<vector<fst::LogWeight>> & cpd);
   void FindBestPaths(const vector<DataLatticePtr> & lattices, string align_fn);
+  void FindBestPlainLatticePaths(const vector<DataLatticePtr> & lattices, string out_fn);
   void Normalize(int epochs);
 
   // Test methods to be moved elsewhere later

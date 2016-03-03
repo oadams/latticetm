@@ -99,13 +99,13 @@ vector<DataLatticePtr> DataLattice::ReadFromOpenFSTFile(const std::string & file
     to_state = stoi(line_tokens[1]);
     WordId in = dict.GetId(line_tokens[2]);
     WordId out = dict.GetId(line_tokens[3]);
-    LogWeight weight = LogWeight(stof(line_tokens[4]));
+    LogWeight arc_weight = LogWeight(stof(line_tokens[4])*weight);
     // Add any necessary states before we add the arc.
     while(num_states < from_state+1 || num_states < to_state+1) {
       ptr->fst_.AddState();
       num_states += 1;
     }
-    ptr->fst_.AddArc(from_state, LogArc(in, out, weight, to_state));
+    ptr->fst_.AddArc(from_state, LogArc(in, out, arc_weight, to_state));
     ptr->f_wordids_.insert(in);
   }
   // Wrap up the last uncompleted lattice.
@@ -182,7 +182,7 @@ void DataLattice::Dijkstra(const Fst<LogArc> & lattice,
   }
 }
 
-void DataLattice::StringFromBacktrace(const vector<int> & prev_state, const vector<pair<int,int>> & prev_align, SymbolSet<string> & dict) {
+void DataLattice::StringFromBacktrace(const vector<int> & prev_state, const vector<pair<int,int>> & prev_align, SymbolSet<string> & dict, ostream & out_stream) {
   int id = prev_state.size()-1;
   vector<string> foreign_source;
   while(true) {
@@ -192,9 +192,9 @@ void DataLattice::StringFromBacktrace(const vector<int> & prev_state, const vect
     id = prev_state[id];
   }
   for(int i = foreign_source.size()-1; i >= 0; i--){
-      cout << foreign_source[i] << " ";
+      out_stream << foreign_source[i] << " ";
   }
-  cout << endl;
+  out_stream << endl;
 }
 
 void DataLattice::AlignmentFromBacktrace(const vector<int> & prev_state, const vector<pair<int,int>> & prev_align, SymbolSet<string> & dict, SymbolSet<string> & trans_dict, ofstream & align_file) {

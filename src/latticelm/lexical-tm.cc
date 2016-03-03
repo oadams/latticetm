@@ -260,11 +260,10 @@ void LexicalTM::FindBestPaths(const vector<DataLatticePtr> & lattices, string al
   ofstream && align_file = ofstream();
   align_file.open(align_fn);
 
-  long i = 1;
   for (auto latticep : lattices) {
       DataLattice lattice = *latticep;
+
       // Perform reduction on TM to make it conform to the lattice.translation_
-      // %TODO: Make this use the normalized TM params.
       VectorFst<LogArc> reduced_tm = CreateReducedTM(lattice, cpd_accumulator_);
       // Compose the lattice with the reduced tm.
       ComposeFst<LogArc> composed_fst(lattice.GetFst(), reduced_tm);
@@ -275,11 +274,22 @@ void LexicalTM::FindBestPaths(const vector<DataLatticePtr> & lattices, string al
       vector<int> && prev_state = vector<int>();
       vector<pair<int,int>> && prev_align = vector<pair<int,int>>();
       DataLattice::Dijkstra(vecfst, prev_state, prev_align, f_vocab_, e_vocab_);
-      DataLattice::StringFromBacktrace(prev_state, prev_align, f_vocab_);
+      DataLattice::StringFromBacktrace(prev_state, prev_align, f_vocab_, cout);
       DataLattice::AlignmentFromBacktrace(prev_state, prev_align, f_vocab_, e_vocab_, align_file);
-      i++;
   }
-
   align_file.close();
+}
 
+void LexicalTM::FindBestPlainLatticePaths(const vector<DataLatticePtr> & lattices, string out_fn) {
+    ofstream && out_file = ofstream();
+    out_file.open(out_fn);
+
+    for (auto latticep : lattices) {
+      DataLattice lattice = *latticep;
+      vector<int> && prev_state = vector<int>();
+      vector<pair<int,int>> && prev_align = vector<pair<int,int>>();
+      DataLattice::Dijkstra(lattice.GetFst(), prev_state, prev_align, f_vocab_, e_vocab_);
+      DataLattice::StringFromBacktrace(prev_state, prev_align, f_vocab_, out_file);
+    }
+    out_file.close();
 }
