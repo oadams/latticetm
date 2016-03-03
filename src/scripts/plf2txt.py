@@ -43,6 +43,7 @@ def from_plf(plf):
 
 exclude = set(string.punctuation)
 exclude.add(u"¿")
+exclude.add(u"¡")
 
 def remove_punctuation(line):
     return "".join(c for c in line if c not in exclude)
