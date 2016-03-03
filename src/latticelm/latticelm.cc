@@ -40,7 +40,7 @@ void LatticeLM::PerformTrainingLexTM(const vector<DataLatticePtr> & lattices, Le
     //tm.PrintParams();
   }
   tm.Normalize(epochs_);
-  tm.FindBestPaths(lattices);
+  tm.FindBestPaths(lattices, "alignments.txt");
 }
 
 template <class LM>

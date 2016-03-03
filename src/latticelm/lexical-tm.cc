@@ -254,7 +254,10 @@ void LexicalTM::ResampleParameters() {
 
 /** Samples the best path through the lattice using the translations and
 * average translation model parameters to inform the sample. **/
-void LexicalTM::FindBestPaths(const vector<DataLatticePtr> & lattices) {
+void LexicalTM::FindBestPaths(const vector<DataLatticePtr> & lattices, string align_fn) {
+
+  ofstream && align_file = ofstream();
+  align_file.open(align_fn);
 
   long i = 1;
   for (auto latticep : lattices) {
@@ -268,10 +271,14 @@ void LexicalTM::FindBestPaths(const vector<DataLatticePtr> & lattices) {
       vecfst.Write("composedforbestpath.fst");
       // Find the shortest path.
       VectorFst<LogArc> * shortest_path = new VectorFst<LogArc>;
-      //VectorFst<StdArc> tropfst(vecfst);
-      DataLattice::Dijkstra(vecfst, f_vocab_, e_vocab_);
-      //shortest_path->Write("sample_" + to_string(i) + ".fst");
+      vector<int> && prev_state = vector<int>();
+      vector<pair<int,int>> && prev_align = vector<pair<int,int>>();
+      DataLattice::Dijkstra(vecfst, prev_state, prev_align, f_vocab_, e_vocab_);
+      DataLattice::StringFromBacktrace(prev_state, prev_align, f_vocab_);
+      DataLattice::AlignmentFromBacktrace(prev_state, prev_align, f_vocab_, e_vocab_, align_file);
       i++;
   }
+
+  align_file.close();
 
 }

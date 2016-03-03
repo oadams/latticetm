@@ -49,7 +49,7 @@ public:
   void ResampleParameters();
   fst::VectorFst<fst::LogArc> CreateReducedTM(const DataLattice & lattice);
   fst::VectorFst<fst::LogArc> CreateReducedTM(const DataLattice & lattice, const vector<vector<fst::LogWeight>> & cpd);
-  void FindBestPaths(const vector<DataLatticePtr> & lattices);
+  void FindBestPaths(const vector<DataLatticePtr> & lattices, string align_fn);
   void Normalize(int epochs);
 
   // Test methods to be moved elsewhere later

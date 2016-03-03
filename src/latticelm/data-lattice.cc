@@ -3,6 +3,8 @@
 #include <latticelm/sentence.h>
 #include <boost/algorithm/string.hpp>
 #include <fst/script/compile-impl.h>
+#include <iostream>
+#include <fstream>
 
 using namespace latticelm;
 using namespace std;
@@ -139,16 +141,16 @@ void DataLattice::ReadTranslations(vector<DataLatticePtr> data_lattices, const s
 
  * Though I could convert Fst<LogArc>s to Fst<StdArc>s, I had pretty much
  * implemented this by the time I found out that would be equivalent.*/
-void DataLattice::Dijkstra(const Fst<LogArc> & lattice, SymbolSet<string> & dict, SymbolSet<string> & trans_dict) {
+void DataLattice::Dijkstra(const Fst<LogArc> & lattice,
+                            vector<int> & prev_state, vector<pair<int,int>> & prev_align,
+                            SymbolSet<string> & dict, SymbolSet<string> & trans_dict) {
   VectorFst<LogArc>::StateId initial_state = lattice.Start();
   assert(initial_state == 0);
   //VectorFst<LogArc>::StateId final_state = lattice.NumStates()-1;
 
   vector<float> min_distance;
   min_distance.push_back(0.0);
-  vector<int> prev_state;
   prev_state.push_back(-1);
-  vector<pair<int,int>> prev_align;
   prev_align.push_back({-1,-1});
   set<pair<float,VectorFst<LogArc>::StateId>> active_vertices;
   active_vertices.insert( {0.0, initial_state} );
@@ -178,13 +180,6 @@ void DataLattice::Dijkstra(const Fst<LogArc> & lattice, SymbolSet<string> & dict
       arc_iter.Next();
     }
   }
-
-  //cout << prev_state << endl;
-  //cout << prev_align << endl;
-  //StringFromBacktrace(prev_state, prev_align, dict);
-  AlignmentFromBacktrace(prev_state, prev_align, dict, trans_dict);
-  //cout << "Len of shortest path: " << min_distance[min_distance.size()-1] << endl;
-  //cout << "---------------" << endl;
 }
 
 void DataLattice::StringFromBacktrace(const vector<int> & prev_state, const vector<pair<int,int>> & prev_align, SymbolSet<string> & dict) {
@@ -202,7 +197,7 @@ void DataLattice::StringFromBacktrace(const vector<int> & prev_state, const vect
   cout << endl;
 }
 
-void DataLattice::AlignmentFromBacktrace(const vector<int> & prev_state, const vector<pair<int,int>> & prev_align, SymbolSet<string> & dict, SymbolSet<string> & trans_dict) {
+void DataLattice::AlignmentFromBacktrace(const vector<int> & prev_state, const vector<pair<int,int>> & prev_align, SymbolSet<string> & dict, SymbolSet<string> & trans_dict, ofstream & align_file) {
   int id = prev_state.size()-1;
   vector<pair<string,string>> alignments;
   while(true) {
@@ -213,7 +208,7 @@ void DataLattice::AlignmentFromBacktrace(const vector<int> & prev_state, const v
     id = prev_state[id];
   }
   for(int i = alignments.size()-1; i >=0; i--) {
-    cout << alignments[i] << " ";
+    align_file << alignments[i] << " ";
   }
-  cout << endl;
+  align_file << endl;
 }
