@@ -4,6 +4,8 @@
 #include <unordered_map>
 #include <latticelm/macros.h>
 #include <latticelm/hashes.h>
+#include <fstream>
+#include <iostream>
 
 namespace latticelm {
 
@@ -47,7 +49,14 @@ public:
 
   size_t size() { return vocab_.size(); }
 
-
+  void Write(std::string path) {
+    std::ofstream sym_file;
+    sym_file.open(path);
+    for(int i = 0; i < vocab_.size(); i++) {
+      sym_file << vocab_[i] << " " << i << std::endl;
+    }
+    sym_file.close();
+  }
 
 };
 

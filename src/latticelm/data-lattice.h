@@ -40,9 +40,25 @@ public:
     return f_wordids_;
   }
 
-  static void Dijkstra(const fst::Fst<fst::LogArc> & lattice, vector<int> & prev_state, vector<pair<int,int>> & prev_align, SymbolSet<string> & dict, SymbolSet<string> & trans_dict);
-  static void StringFromBacktrace(const vector<int> & prev_state, const vector<pair<int,int>> & prev_align, SymbolSet<string> & dict, ostream & out_stream);
-  static void AlignmentFromBacktrace(const vector<int> & prev_state, const vector<pair<int,int>> & prev_align, SymbolSet<string> & dict, SymbolSet<string> & trans_dict, ofstream & align_file);
+  static void Dijkstra(const fst::Fst<fst::LogArc> & lattice, vector<int> & prev_state, vector<pair<int,int>> & prev_align, SymbolSet<string> & dict, SymbolSet<string> & trans_dict, bool debug=false);
+  static void StringFromBacktrace(const int final_state_id, const vector<int> & prev_state, const vector<pair<int,int>> & prev_align, SymbolSet<string> & dict, ostream & out_stream);
+  static void AlignmentFromBacktrace(const int final_state_id, const vector<int> & prev_state, const vector<pair<int,int>> & prev_align, SymbolSet<string> & dict, SymbolSet<string> & trans_dict, ofstream & align_file);
+
+  static int GetFinal(const fst::Fst<fst::LogArc> & fst) {
+    for (StateIterator<Fst<LogArc>> iter(fst);
+        !iter.Done();
+        iter.Next()) {
+      int state_id = iter.Value();
+      if(fst.Final(state_id) == LogArc::Weight::One()) {
+        return state_id;
+      }
+    }
+    THROW_ERROR("No final state.");
+  }
+
+  int GetFinal() {
+    return GetFinal(fst_);
+  }
 
 protected:
   fst::VectorFst<LogArc> fst_;

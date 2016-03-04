@@ -110,7 +110,7 @@ vector<DataLatticePtr> DataLattice::ReadFromOpenFSTFile(const std::string & file
   }
   // Wrap up the last uncompleted lattice.
   ptr->fst_.SetFinal(to_state, LogArc::Weight::One());
-  //DataLattice::Dijkstra(ptr->fst_, dict);
+  dict.Write("data/out/lattices/isymbols.txt");
   ret.push_back(ptr);
   return ret;
 }
@@ -128,6 +128,7 @@ void DataLattice::ReadTranslations(vector<DataLatticePtr> data_lattices, const s
     data_lattices[i++]->SetTranslation(sent);
   }
   if(i != data_lattices.size()) THROW_ERROR("Number of lattices and number of translations are not equal.");
+  trans_dict.Write("data/out/lattices/osymbols.txt");
 }
 
 /** Uses Dijkstra's shortest path algorithm to find the shortest path through
@@ -143,7 +144,7 @@ void DataLattice::ReadTranslations(vector<DataLatticePtr> data_lattices, const s
  * implemented this by the time I found out that would be equivalent.*/
 void DataLattice::Dijkstra(const Fst<LogArc> & lattice,
                             vector<int> & prev_state, vector<pair<int,int>> & prev_align,
-                            SymbolSet<string> & dict, SymbolSet<string> & trans_dict) {
+                            SymbolSet<string> & dict, SymbolSet<string> & trans_dict, bool debug) {
   VectorFst<LogArc>::StateId initial_state = lattice.Start();
   assert(initial_state == 0);
   //VectorFst<LogArc>::StateId final_state = lattice.NumStates()-1;
@@ -155,10 +156,16 @@ void DataLattice::Dijkstra(const Fst<LogArc> & lattice,
   set<pair<float,VectorFst<LogArc>::StateId>> active_vertices;
   active_vertices.insert( {0.0, initial_state} );
 
+  std::ofstream debug_stream;
+  if (debug) debug_stream.open("data/out/debug_stream.txt");
+
+  if (debug) debug_stream << "active_vertices.begin()->first: " << active_vertices.begin()->first << std::endl;
+
   while(!active_vertices.empty()) {
     int cur = active_vertices.begin()->second;
     active_vertices.erase(active_vertices.begin());
     fst::ArcIterator<Fst<LogArc>> arc_iter(lattice, cur);
+    if (debug) debug_stream << "Iterating over the arcs from state " << cur << endl;
     while(true) {
       if(arc_iter.Done()) break;
       const LogArc& arc = arc_iter.Value();
@@ -170,9 +177,15 @@ void DataLattice::Dijkstra(const Fst<LogArc> & lattice,
         pair<int,int> nullpair = {-1,-1};
         prev_align.push_back(nullpair);
       }
+      if (debug) debug_stream << "min_distance: " << min_distance << endl;
+      if (debug) debug_stream << "\tDealing with arc: " << arc.ilabel << ":" << arc.olabel << "/" << arc.weight << " to " << arc.nextstate << endl;
+      if (debug) debug_stream << "\t\tmin_distance[cur]: " << min_distance[cur] << endl;
+      if (debug) debug_stream << "\t\tfst::Times(min_distance[cur],arc.weight): " << fst::Times(min_distance[cur],arc.weight).Value() << endl;
+      if (debug) debug_stream << "\t\tmin_distance[arc.nextstate]: " << min_distance[arc.nextstate] << endl;
       if(fst::Times(min_distance[cur],arc.weight).Value() < min_distance[arc.nextstate]) {
         active_vertices.erase( { min_distance[arc.nextstate], arc.nextstate } );
         min_distance[arc.nextstate] = fst::Times(min_distance[cur], arc.weight).Value();
+      if (debug) debug_stream << "\t\tmin_distance[arc.nextstate]: " << min_distance[arc.nextstate] << endl;
         prev_state[arc.nextstate] = cur;
         prev_align[arc.nextstate] = {arc.ilabel, arc.olabel};
         active_vertices.insert( { min_distance[arc.nextstate], arc.nextstate } );
@@ -180,10 +193,13 @@ void DataLattice::Dijkstra(const Fst<LogArc> & lattice,
       arc_iter.Next();
     }
   }
+  if (debug) debug_stream << "prev_state: " << prev_state << endl;
+  if (debug) debug_stream << "prev_align: " << prev_align << endl;
+  debug_stream.close();
 }
 
-void DataLattice::StringFromBacktrace(const vector<int> & prev_state, const vector<pair<int,int>> & prev_align, SymbolSet<string> & dict, ostream & out_stream) {
-  int id = prev_state.size()-1;
+void DataLattice::StringFromBacktrace(const int final_state_id, const vector<int> & prev_state, const vector<pair<int,int>> & prev_align, SymbolSet<string> & dict, ostream & out_stream) {
+  int id = final_state_id;
   vector<string> foreign_source;
   while(true) {
     int wordid = prev_align[id].first;
@@ -197,8 +213,8 @@ void DataLattice::StringFromBacktrace(const vector<int> & prev_state, const vect
   out_stream << endl;
 }
 
-void DataLattice::AlignmentFromBacktrace(const vector<int> & prev_state, const vector<pair<int,int>> & prev_align, SymbolSet<string> & dict, SymbolSet<string> & trans_dict, ofstream & align_file) {
-  int id = prev_state.size()-1;
+void DataLattice::AlignmentFromBacktrace(const VectorFst<LogArc>::StateId final_state_id, const vector<int> & prev_state, const vector<pair<int,int>> & prev_align, SymbolSet<string> & dict, SymbolSet<string> & trans_dict, ofstream & align_file) {
+  int id = final_state_id;
   vector<pair<string,string>> alignments;
   while(true) {
     int f_wordid = prev_align[id].first;
