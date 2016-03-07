@@ -36,10 +36,10 @@ void LatticeLM::PerformTrainingLexTM(const vector<DataLatticePtr> & lattices, Le
     }
     cerr << "Finished epoch " << epoch << ": char=" << ep_stats.words_ << ", ppl=" << ep_stats.CalcPPL() << " (s=" << time_.Elapsed() << ")" << endl;
     tm.ResampleParameters();
-    tm.PrintParams("data/out/params/tm.sample" + to_string(epoch));
+    //tm.PrintParams("data/out/params/tm.sample" + to_string(epoch));
   }
   tm.Normalize(epochs_);
-  tm.PrintAvgParams("data/out/params/tm.avg");
+  tm.PrintParams("data/out/params/tm.avg");
   tm.FindBestPlainLatticePaths(lattices, "data/out/plain_paths.txt");
   tm.FindBestPaths(lattices, "data/out/alignments.txt");
 }
