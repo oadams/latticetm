@@ -7,6 +7,8 @@
 #include <fst/shortest-path.h>
 #include <latticelm/timer.h>
 #include <latticelm/data-lattice.h>
+#include <algorithm>
+#include <boost/bind.hpp>
 
 using namespace latticelm;
 using namespace fst;
@@ -44,26 +46,53 @@ void LexicalTM::PrintCounts() {
   cout << endl;
 }
 
-void LexicalTM::PrintParams() {
-  PrintParams(cpd_);
+/** Must be called after LexicalTM::Normalize() */
+void LexicalTM::PrintAvgParams(string path) {
+  PrintParams(cpd_accumulator_, path);
 }
 
-void LexicalTM::PrintParams(vector<vector<fst::LogWeight>> cpd) {
-  cout << std::fixed << std::setw( 1 ) << std::setprecision( 3 );
-  //cout << endl << "CPD parameters: " << endl;
-  cout << "\t";
-  for(int j = 0; j < f_vocab_size_; j++) {
-    cout << f_vocab_.GetSym(j) << "\t";
-  }
-  cout << endl;
+void LexicalTM::PrintParams(string path) {
+  PrintParams(cpd_, path);
+}
+
+void LexicalTM::PrintParams(vector<vector<fst::LogWeight>> cpd, string path) {
+  ofstream tm_file;
+  tm_file.open(path);
+
+  // %TODO I want to sort the English words by frequency, then show the top foreign translations of each.
   for(int i = 0; i < e_vocab_size_; i++) {
-    cout << e_vocab_.GetSym(i) << "\t";
-    for(int j = 0; j < f_vocab_size_; j++) {
-      cout << exp(-1*cpd[i][j].Value()) << "\t";
+    tm_file << i << ", " << e_vocab_.GetSym(i) << endl;
+    vector<pair<int, float>> dist(f_vocab_size_);
+    for (int j = 0; j < f_vocab_size_; j++) {
+      dist[j] = {j, cpd[i][j].Value()};
     }
-    cout << endl;
+    //vector<fst::LogWeight> dist = vector<fst::LogWeight>(cpd[i]);
+    std::sort(dist.begin(), dist.end(), boost::bind(&std::pair<int, float>::second, _1) < boost::bind(&std::pair<int, float>::second, _2));
+    //for(int j = 0; j < (10 < f_vocab_size_) ? 10 : f_vocab_size_; j++) {
+    for(int j = 0; j < 10; j++) {
+      tm_file << "\t" << dist[j].first << ", " << f_vocab_.GetSym(dist[j].first) << ": " << dist[j].second << endl;
+    }
   }
-  cout << endl;
+
+  tm_file.close();
+
+  /*
+  tm_file << std::fixed << std::setw( 1 ) << std::setprecision( 3 );
+  //tm_file << endl << "CPD parameters: " << endl;
+  tm_file << "\t";
+  for(int j = 0; j < f_vocab_size_; j++) {
+    tm_file << f_vocab_.GetSym(j) << "\t";
+  }
+  tm_file << endl;
+  for(int i = 0; i < e_vocab_size_; i++) {
+    tm_file << e_vocab_.GetSym(i) << "\t";
+    for(int j = 0; j < f_vocab_size_; j++) {
+      tm_file << exp(-1*cpd[i][j].Value()) << "\t";
+    }
+    tm_file << endl;
+  }
+  tm_file << endl;
+  */
 }
 
 void LexicalTM::Normalize(int epochs) {

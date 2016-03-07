@@ -57,8 +57,9 @@ public:
   void TestLogWeightSampling();
 
   // Helpful methods
-  void PrintParams();
-  void PrintParams(vector<vector<fst::LogWeight>> cpd);
+  void PrintParams(string path);
+  void PrintAvgParams(string path);
+  void PrintParams(vector<vector<fst::LogWeight>> cpd, string path);
   void PrintCounts();
 
 protected:
