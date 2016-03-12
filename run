@@ -1,0 +1,15 @@
+#!/bin/bash
+
+name=$1
+epochs=$2
+alpha=$3
+weight=$4
+
+./src/latticelm/latticelm \
+	--train_file data/fisher-callhome/corpus/plf/${name}.es.lat \
+	--trans_file data/fisher-callhome/corpus/ldc/${name}.en.nopunc.lower \
+	--beam 1 --char_n 1 --word_n 1 \
+	--file_format openfst --model_type lextm \
+	--epochs ${epochs} --concentration ${alpha} --lattice_weight ${weight} \
+	2> data/out/log \
+	> data/out/transcriptions/${name}.epochs${epochs}.alpha${alpha}.weight${weight}.es \

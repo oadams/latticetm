@@ -1,0 +1,18 @@
+#!/bin/bash
+
+dataset="fisher_test"
+epochs=10
+
+alphas=(0.5 1 2 4)
+weights=(0.5 1 2 4)
+
+outf="data/out/${dataset}_p(f|e)_results.csv"
+
+printf "score\tepochs\talpha\tweight\n" > $outf
+for alpha in "${alphas[@]}"; do
+	for weight in "${weights[@]}"; do
+		./run $dataset $epochs $alpha $weight
+		./wer $dataset $epochs $alpha $weight >> $outf
+		printf "\t${epochs}\t${alpha}\t${weight}\n" >> $outf
+	done
+done
