@@ -6,7 +6,7 @@ epochs=10
 alphas=(0.5 1 2 4)
 weights=(0.5 1 2 4)
 
-outf="data/out/${dataset}_p(f|e)_results.csv"
+outf="data/out/${dataset}_p(f|e)_unnorm_results.csv"
 
 printf "score\tepochs\talpha\tweight\n" > $outf
 for alpha in "${alphas[@]}"; do
