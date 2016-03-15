@@ -1,0 +1,9 @@
+#!/bin/bash
+
+name=$1
+
+./src/latticelm/latticelm \
+	--train_file data/fisher-callhome/corpus/plf/${name}.es.lat \
+	--trans_file data/fisher-callhome/corpus/ldc/${name}.en.nopunc.lower \
+	--file_format openfst --model_type lextm \
+	--plain_best_paths ${name}.es
