@@ -24,6 +24,7 @@ while i < len(lines):
     i += 1
     results.append(result)
 
+asr = float(lines[0].split()[2])
 print("\\begin{tabular}{| c c | c |}")
 print("\\hline")
 print("$\\alpha$ & $\\lambda$ & WER\\\\")
@@ -35,5 +36,7 @@ for result in results:
     else:
         print("%s & %s & %.3f\\\\" % (result[2], result[3], result[0]))
     i += 1
+print("\\hline")
+print("\\multicolumn{2}{| r |}{ASR 1-best} & %.3f\\\\" % asr)
 print("\\hline")
 print("\\end{tabular}")
