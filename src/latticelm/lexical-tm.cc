@@ -9,6 +9,7 @@
 #include <latticelm/data-lattice.h>
 #include <algorithm>
 #include <boost/bind.hpp>
+#include <boost/algorithm/string.hpp>
 
 using namespace latticelm;
 using namespace fst;
@@ -170,7 +171,11 @@ VectorFst<LogArc> LexicalTM::CreateReducedTM(const DataLattice & lattice) {
       for(int f : lattice.GetFWordIds()) {
         //LogWeight dupCoef = fst::LogWeight(-1*log(times_in)); // So that we can multiply the weight of the arc by the number of times we see the English word.
         //reduced_tm.AddArc(only_state, LogArc(f, e, fst::Divide(fst::Times(dupCoef, cpd[e][f]), total), only_state));
-        reduced_tm.AddArc(only_state, LogArc(f, e, fst::Divide(DirichletProb(e,f), total), only_state));
+        if(total == LogWeight::Zero()) {
+          reduced_tm.AddArc(only_state, LogArc(f, e, LogWeight::Zero(), only_state));
+        } else {
+          reduced_tm.AddArc(only_state, LogArc(f, e, fst::Divide(DirichletProb(e,f), total), only_state));
+        }
       }
     }
   }
@@ -209,7 +214,11 @@ VectorFst<LogArc> LexicalTM::CreateReducedTM(const DataLattice & lattice, const 
       for(int f : lattice.GetFWordIds()) {
         //LogWeight dupCoef = fst::LogWeight(-1*log(times_in)); // So that we can multiply the weight of the arc by the number of times we see the English word.
         //reduced_tm.AddArc(only_state, LogArc(f, e, fst::Divide(fst::Times(dupCoef, cpd[e][f]), total), only_state));
-        reduced_tm.AddArc(only_state, LogArc(f, e, fst::Divide(cpd[e][f], total), only_state));
+        if(total == LogWeight::Zero()) {
+          reduced_tm.AddArc(only_state, LogArc(f, e, LogWeight::Zero(), only_state));
+        } else {
+          reduced_tm.AddArc(only_state, LogArc(f, e, fst::Divide(cpd[e][f], total), only_state));
+        }
       }
     }
   }
@@ -307,10 +316,16 @@ void LexicalTM::ResampleParameters() {
   }
 }
 
+void LexicalTM::FindBestPaths(const vector<DataLatticePtr> & lattices, string align_fn) {
+  FindBestPaths(lattices, align_fn, cpd_accumulator_);
+}
 
 /** Samples the best path through the lattice using the translations and
 * average translation model parameters to inform the sample. **/
-void LexicalTM::FindBestPaths(const vector<DataLatticePtr> & lattices, string align_fn) {
+void LexicalTM::FindBestPaths(
+    const vector<DataLatticePtr> & lattices,
+    string align_fn,
+    vector<vector<fst::LogWeight>> cpd) {
 
   ofstream && align_file = ofstream();
   align_file.open(align_fn);
@@ -320,7 +335,7 @@ void LexicalTM::FindBestPaths(const vector<DataLatticePtr> & lattices, string al
       DataLattice lattice = *latticep;
 
       // Perform reduction on TM to make it conform to the lattice.translation_
-      VectorFst<LogArc> reduced_tm = CreateReducedTM(lattice, cpd_accumulator_);
+      VectorFst<LogArc> reduced_tm = CreateReducedTM(lattice, cpd);
       reduced_tm.Write("data/out/lattices/reduced_tm" + to_string(i) + ".fst");
       // Compose the lattice with the reduced tm.
       ComposeFst<LogArc> composed_fst(lattice.GetFst(), reduced_tm);
@@ -331,7 +346,7 @@ void LexicalTM::FindBestPaths(const vector<DataLatticePtr> & lattices, string al
       VectorFst<LogArc> * shortest_path = new VectorFst<LogArc>;
       vector<int> && prev_state = vector<int>();
       vector<pair<int,int>> && prev_align = vector<pair<int,int>>();
-      DataLattice::Dijkstra(vecfst, prev_state, prev_align, f_vocab_, e_vocab_);
+      DataLattice::Dijkstra(vecfst, prev_state, prev_align, f_vocab_, e_vocab_, false);
 
       int final_state = DataLattice::GetFinal(composed_fst);
       DataLattice::StringFromBacktrace(final_state, prev_state, prev_align, f_vocab_, cout);
@@ -358,4 +373,55 @@ void LexicalTM::FindBestPlainLatticePaths(const vector<DataLatticePtr> & lattice
       i++;
     }
     out_file.close();
+}
+
+vector<vector<fst::LogWeight>> LexicalTM::load_TM(const string filename) {
+  ifstream in(filename);
+  if(!in) THROW_ERROR("Could not open " << filename);
+
+  // Initialize translation model
+  vector<vector<fst::LogWeight>> tm;
+  for(int e = 0; e < e_vocab_size_; e++) {
+    vector<fst::LogWeight> row;
+    for(int f = 0; f < f_vocab_size_; f++) {
+      row.push_back(LogWeight::Zero());
+    }
+    tm.push_back(row);
+  }
+
+  string line;
+  while(getline(in, line)) {
+    vector<string> line_tokens;
+    boost::split(line_tokens, line, boost::is_any_of(" "), boost::token_compress_on);
+    if(line_tokens.size() != 3) {
+      cerr << "tm line: " << line_tokens << endl;
+      THROW_ERROR("Translation model line must consist of 3 tokens space delimited.");
+    }
+    string f = line_tokens[0];
+    string e = line_tokens[1];
+    float real_prob = stof(line_tokens[2]);
+    LogWeight prob = LogWeight(-1*log(real_prob));
+
+    if(real_prob <= 0.f) { 
+      THROW_ERROR("TM probs loaded must be greater than 0.0");
+    }
+
+    tm[(e != "NULL") ? e_vocab_.GetId(e) : 0][(f != "NULL") ? f_vocab_.GetId(f) : 0] = prob;
+  }
+
+  //cout << "P(super|student): " << tm[e_vocab_.GetId("student")][f_vocab_.GetId("super")] << endl;
+  //cout << fst::Plus(tm[e_vocab_.GetId("student")][f_vocab_.GetId("super")],fst::LogWeight(1.3404)) << endl;
+
+  // Check to make sure each row is a valid distribution
+  /*
+  for(vector<fst::LogWeight> row : tm) {
+    fst::LogWeight total = LogWeight::Zero();
+    for(fst::LogWeight prob : row) {
+      total = fst::Plus(total, prob);
+    }
+    cout << total << endl;
+  }
+  */
+
+  return tm;
 }

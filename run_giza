@@ -1,0 +1,31 @@
+#!/bin/bash
+
+dataset=$1
+
+GIZA_DIR=$HOME/tools/giza-pp/
+MOSES_DIR=$HOME/tools/mosesdecoder
+NUM_CORES=3
+
+src=data/out/plain_best_paths/${dataset}.es
+tgt=data/fisher-callhome/corpus/ldc/${dataset}.en.nopunc.lower
+OUT_DIR=$HOME/code/latticelm-v2/data/out/giza-pp/
+mkdir -p $OUT_DIR/train/$dataset
+cp $src $OUT_DIR/${dataset}.es
+cp $tgt $OUT_DIR/${dataset}.en
+
+touch $OUT_DIR/fakelm
+
+$MOSES_DIR/scripts/training/train-model.perl \
+		-root-dir ${OUT_DIR}/train/$dataset \
+		-cores $NUM_CORES \
+		-corpus $OUT_DIR/$dataset -f es -e en \
+		-alignment grow-diag-final-and -reordering msd-bidirectional-fe \
+		-lm 0:5:$OUT_DIR/fakelm \
+		-external-bin-dir $GIZA_DIR/bin &> $OUT_DIR/training.out
+
+#libtool --mode=execute valgrind ./src/latticelm/latticelm \
+./src/latticelm/latticelm \
+	--train_file data/fisher-callhome/corpus/plf/${dataset}.es.lat \
+	--trans_file data/fisher-callhome/corpus/ldc/${dataset}.en.nopunc.lower \
+	--file_format openfst --model_type lextm \
+	--using_external_tm data/out/giza-pp/train/${dataset}/model/lex.e2f
