@@ -13,10 +13,14 @@ done
 CUTS=10
 DIFF=$((SIZE/CUTS))
 
+# The number of sentences per minute
+callhome_rate=$((20875/(20*60)))
+
 for ((i=0;i<CUTS;i++)); do
 	num_sents=$((SIZE-i*DIFF))
+	printf "%b\t" $((num_sents/callhome_rate))
 	./run $dataset $epochs $alpha $weight $num_sents
 	./wer $dataset $epochs $alpha $weight $num_sents
 done
-./run $dataset $epochs $alpha $weight 0
-./wer $dataset $epochs $alpha $weight 0
+#./run $dataset $epochs $alpha $weight 0
+#./wer $dataset $epochs $alpha $weight 0
