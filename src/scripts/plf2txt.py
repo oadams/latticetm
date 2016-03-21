@@ -1,7 +1,6 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 # -*- coding: UTF-8 -*-
 
-from __future__ import print_function
 import sys
 import io
 import string
@@ -48,29 +47,59 @@ exclude.add(u"¡")
 def remove_punctuation(line):
     return "".join(c for c in line if c not in exclude)
 
-def convert_file(es_in_fn, es_out_fn, en_in_fn, en_out_fn):
-    """ Takes input and output filenames as strings. Reading PLF lattices from
-    the input file outputs lattices in a format to be read by latticelm.
+def jointly_process_files(corpus_root, prefix):
+    """ Takes a corpus prefix and performs joint processing of (1) The
+    word-lattices (2) The Spanish gold LDC transcription (3) The English
+    transcription.
+
+    (1) The LF lattices are converted to a format that can be read by latticelm.
     Sometimes there will be empty lattices. In this case, remove the
-    corresponding English line."""
-    with open(es_in_fn) as input_file:
-        es_input_lines = input_file.readlines()
-    with io.open(en_in_fn, encoding="utf-8") as input_file:
-        en_input_lines = input_file.readlines()
-    with open(es_out_fn, "w") as es_out_file, io.open(en_out_fn, "w", encoding="utf-8") as en_out_file:
-        i = 0
-        for i in range(len(es_input_lines)):
-            plf = es_input_lines[i]
-            output_lattice = from_plf(plf)
-            #print(output_lattice)
-            #raw_input()
-            if output_lattice == []:
+    corresponding transcription lines.
+
+    (2) and (3) have punctuation removed and are lowercased.
+    """
+
+    plf_path = corpus_root + "/plf/" + prefix + ".es"
+    gold_path = corpus_root + "/ldc/" + prefix + ".es"
+    trans_path = corpus_root + "/ldc/" + prefix + ".en"
+
+    with open(plf_path) as plf_file:
+        plf_lines = plf_file.readlines()
+    with open(gold_path) as gold_file:
+        gold_lines = gold_file.readlines()
+    with open(trans_path) as trans_file:
+        trans_lines = trans_file.readlines()
+
+    if (len(plf_lines) != len(gold_lines)) or (len(plf_lines) != len(trans_lines)):
+        raise Exception("Corpora components of different lengths:\n\t" +
+                        "plf_lines: %d, gold_lines: %d, trans_lines: %d" %
+                            (len(plf_lines), len(gold_lines),
+                            len(trans_lines)))
+
+    lattices = [from_plf(plf) for plf in plf_lines]
+    gold_lines = [remove_punctuation(line).lower() for line in gold_lines]
+    trans_lines = [remove_punctuation(line).lower() for line in trans_lines]
+
+    assert len(lattices) == len(gold_lines)
+    assert len(lattices) == len(trans_lines)
+
+    with open(plf_path+".lat", "w") as lat_file, open(gold_path+".nopunc.lower", "w") as gold_file, open(trans_path+".nopunc.lower", "w") as trans_file:
+        for i in range(len(lattices)):
+            if lattices[i] == []:
                 continue
-            for line in output_lattice:
-                print(line, file=es_out_file)
-            print("",file=es_out_file)
-            print(remove_punctuation(en_input_lines[i]).lower(), file=en_out_file, end=u"")
+            if gold_lines[i] == "\n" or trans_lines[i] == "\n":
+                continue
+
+            if i != 0:
+                print("", file=lat_file)
+            for line in lattices[i]:
+                print(line, file=lat_file)
+
+            print(gold_lines[i], file=gold_file, end="")
+            print(trans_lines[i], file=trans_file, end="")
 
 if __name__ == "__main__":
-    es_in_fn, es_out_fn, en_in_fn, en_out_fn = sys.argv[1:]
-    convert_file(es_in_fn, es_out_fn, en_in_fn, en_out_fn)
+    corpus_root = sys.argv[1]
+    prefix = sys.argv[2]
+
+    jointly_process_files(corpus_root, prefix)
