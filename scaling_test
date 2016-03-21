@@ -1,0 +1,22 @@
+#!/bin/bash
+
+dataset="callhome_evltest"
+epochs=30
+alpha=1
+weight=1
+
+WC_OUT="$(wc -l data/fisher-callhome/corpus/ldc/${dataset}.es.nopunc.lower)"
+for token in $WC_OUT; do
+	SIZE=$token
+	break
+done
+CUTS=10
+DIFF=$((SIZE/CUTS))
+
+for ((i=0;i<CUTS;i++)); do
+	num_sents=$((SIZE-i*DIFF))
+	./run $dataset $epochs $alpha $weight $num_sents
+	./wer $dataset $epochs $alpha $weight $num_sents
+done
+./run $dataset $epochs $alpha $weight 0
+./wer $dataset $epochs $alpha $weight 0

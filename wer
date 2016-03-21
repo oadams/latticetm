@@ -4,7 +4,8 @@ name=$1
 epochs=$2
 alpha=$3
 weight=$4
+num_sents=$5
 
 python ~/code/nlp/per.py \
 		--ref data/fisher-callhome/corpus/ldc/${name}.es.nopunc.lower \
-		--hypo data/out/transcriptions/${name}.epochs${epochs}.alpha${alpha}.weight${weight}.es \
+		--hypo data/out/transcriptions/${name}.epochs${epochs}.alpha${alpha}.weight${weight}.num_sents${num_sents}.es \

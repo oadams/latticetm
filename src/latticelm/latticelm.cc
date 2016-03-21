@@ -16,7 +16,14 @@ namespace po = boost::program_options;
 
 namespace latticelm {
 
-void LatticeLM::PerformTrainingLexTM(const vector<DataLatticePtr> & lattices, LexicalTM & tm) {
+void LatticeLM::PerformTrainingLexTM(const vector<DataLatticePtr> & all_lattices, LexicalTM & tm, int num_sents) {
+  vector<DataLatticePtr>::const_iterator last;
+  if(num_sents >= 0) {
+    last = all_lattices.begin() + (num_sents-1);
+  } else {
+    last = all_lattices.end();
+  }
+  vector<DataLatticePtr> lattices(all_lattices.begin(), last);
   // Perform training
   vector<int> order(lattices.size()); std::iota(order.begin(), order.end(), 0);
   vector<Alignment> alignments(lattices.size());
@@ -40,7 +47,7 @@ void LatticeLM::PerformTrainingLexTM(const vector<DataLatticePtr> & lattices, Le
   }
   tm.Normalize(epochs_);
   tm.PrintParams("data/out/params/tm.avg");
-  tm.FindBestPaths(lattices, "data/out/alignments.txt");
+  tm.FindBestPaths(all_lattices, "data/out/alignments.txt");
 }
 
 template <class LM>
@@ -83,6 +90,7 @@ int LatticeLM::main(int argc, char** argv) {
       ("verbose", po::value<int>()->default_value(1), "Verbosity of messages to print")
       ("concentration", po::value<float>()->default_value(1.0), "The concentration parameter for the Dirichlet process of the translation model.")
       ("plain_best_paths", po::value<string>()->default_value(""), "Just output the 1-best path through the supplied lattice.")
+      ("num_sents", po::value<int>()->default_value(-1), "Number of training sents")
       ;
   boost::program_options::variables_map vm;
   po::store(po::parse_command_line(argc, argv, desc), vm);
@@ -139,7 +147,7 @@ int LatticeLM::main(int argc, char** argv) {
     PerformTraining(lattices, hlm);
   } else if(model_type_ == "lextm") {
     LexicalTM tm(cids_, trans_ids_, alpha_);
-    PerformTrainingLexTM(lattices, tm);
+    PerformTrainingLexTM(lattices, tm, vm["num_sents"].as<int>());
   }
 
   return 0;
