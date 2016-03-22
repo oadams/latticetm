@@ -280,7 +280,7 @@ Alignment LexicalTM::CreateSample(const DataLattice & lattice, LLStats & stats) 
 
   // Perform reduction on TM to make it conform to the lattice.translation_
   VectorFst<LogArc> reduced_tm = CreateReducedTM(lattice);
-  reduced_tm.Write("reduced_tm.fst");
+  //reduced_tm.Write("reduced_tm.fst");
 
   //lattice.GetFst().Write("lattice.fst");
 
