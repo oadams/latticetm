@@ -9,7 +9,7 @@ NUM_CORES=3
 
 src=data/out/plain_best_paths/${dataset}.es
 tgt=data/fisher-callhome/corpus/ldc/${dataset}.en.nopunc.lower
-OUT_DIR=$HOME/code/latticelm-v2/data/out/giza-pp/${dataset}/${num_sents}
+OUT_DIR=$HOME/code/latticelm-v2/data/out/giza-pp/${dataset}/n${num_sents}
 mkdir -p $OUT_DIR/train
 
 head -n $num_sents $src > $OUT_DIR/${dataset}.es
