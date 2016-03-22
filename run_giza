@@ -1,0 +1,26 @@
+#!/bin/bash
+
+dataset=$1
+num_sents=$2
+
+GIZA_DIR=$HOME/tools/giza-pp/
+MOSES_DIR=$HOME/tools/mosesdecoder
+NUM_CORES=3
+
+src=data/out/plain_best_paths/${dataset}.es
+tgt=data/fisher-callhome/corpus/ldc/${dataset}.en.nopunc.lower
+OUT_DIR=$HOME/code/latticelm-v2/data/out/giza-pp/${dataset}/${num_sents}
+mkdir -p $OUT_DIR/train
+
+head -n $num_sents $src > $OUT_DIR/${dataset}.es
+head -n $num_sents $tgt > $OUT_DIR/${dataset}.en
+
+touch $OUT_DIR/fakelm
+
+$MOSES_DIR/scripts/training/train-model.perl \
+		-root-dir ${OUT_DIR}/train \
+		-cores $NUM_CORES \
+		-corpus $OUT_DIR/${dataset} -f es -e en \
+		-alignment grow-diag-final-and -reordering msd-bidirectional-fe \
+		-lm 0:5:$OUT_DIR/fakelm \
+		-external-bin-dir $GIZA_DIR/bin &> $OUT_DIR/training.out

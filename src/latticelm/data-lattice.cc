@@ -172,7 +172,7 @@ void DataLattice::Dijkstra(const Fst<LogArc> & lattice,
       //cout << arc.weight << " " << arc.ilabel << " " << arc.olabel << endl;
       // Expand min_distance if we need to.
       while(arc.nextstate+1 > min_distance.size()) {
-        min_distance.push_back(std::numeric_limits<float>::max());
+        min_distance.push_back(LogWeight::Zero().Value());
         prev_state.push_back(-1);
         pair<int,int> nullpair = {-1,-1};
         prev_align.push_back(nullpair);
@@ -182,10 +182,10 @@ void DataLattice::Dijkstra(const Fst<LogArc> & lattice,
       if (debug) debug_stream << "\t\tmin_distance[cur]: " << min_distance[cur] << endl;
       if (debug) debug_stream << "\t\tfst::Times(min_distance[cur],arc.weight): " << fst::Times(min_distance[cur],arc.weight).Value() << endl;
       if (debug) debug_stream << "\t\tmin_distance[arc.nextstate]: " << min_distance[arc.nextstate] << endl;
-      if(fst::Times(min_distance[cur],arc.weight).Value() < min_distance[arc.nextstate]) {
+      if(fst::Times(min_distance[cur],arc.weight).Value() <= min_distance[arc.nextstate]) {
         active_vertices.erase( { min_distance[arc.nextstate], arc.nextstate } );
         min_distance[arc.nextstate] = fst::Times(min_distance[cur], arc.weight).Value();
-      if (debug) debug_stream << "\t\tmin_distance[arc.nextstate]: " << min_distance[arc.nextstate] << endl;
+        if (debug) debug_stream << "\t\tmin_distance[arc.nextstate]: " << min_distance[arc.nextstate] << endl;
         prev_state[arc.nextstate] = cur;
         prev_align[arc.nextstate] = {arc.ilabel, arc.olabel};
         active_vertices.insert( { min_distance[arc.nextstate], arc.nextstate } );

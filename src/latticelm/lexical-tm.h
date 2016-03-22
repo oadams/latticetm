@@ -47,6 +47,7 @@ public:
   fst::VectorFst<fst::LogArc> CreateReducedTM(const DataLattice & lattice);
   fst::VectorFst<fst::LogArc> CreateReducedTM(const DataLattice & lattice, const vector<vector<fst::LogWeight>> & cpd);
   void FindBestPaths(const vector<DataLatticePtr> & lattices, string align_fn);
+  void FindBestPaths(const vector<DataLatticePtr> & lattices, string align_fn, const vector<vector<fst::LogWeight>> cpd);
   void FindBestPlainLatticePaths(const vector<DataLatticePtr> & lattices, string out_fn);
   void Normalize(int epochs);
   LogWeight DirichletProb(int e, int f);
@@ -59,6 +60,8 @@ public:
   void PrintAvgParams(string path);
   void PrintParams(vector<vector<fst::LogWeight>> cpd, string path);
   void PrintCounts();
+
+  vector<vector<fst::LogWeight>> load_TM(const string filename);
 
 protected:
 
