@@ -1,12 +1,15 @@
 #!/bin/bash
 
-dataset=$1
-num_sents=$2
+test_set=$1
+tm_file=$2
+
+#num_sents=$2
 direction="e2f" #e2f means p(f|e)
 
 #libtool --mode=execute valgrind ./src/latticelm/latticelm \
 ./src/latticelm/latticelm \
-	--train_file data/fisher-callhome/corpus/plf/${dataset}.es.lat \
-	--trans_file data/fisher-callhome/corpus/ldc/${dataset}.en.nopunc.lower \
+	--train_file data/fisher-callhome/corpus/plf/${test_set}.es.lat \
+	--trans_file data/fisher-callhome/corpus/ldc/${test_set}.en.nopunc.lower \
 	--file_format openfst --model_type lextm \
-	--using_external_tm data/out/giza-pp/${dataset}/n${num_sents}/train/model/lex.${direction}
+	--using_external_tm $tm_file
+#	--using_external_tm data/out/giza-pp/${dataset}/n${num_sents}/train/model/lex.${direction}

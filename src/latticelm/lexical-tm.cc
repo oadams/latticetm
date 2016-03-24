@@ -406,7 +406,12 @@ vector<vector<fst::LogWeight>> LexicalTM::load_TM(const string filename) {
       THROW_ERROR("TM probs loaded must be greater than 0.0");
     }
 
-    tm[(e != "NULL") ? e_vocab_.GetId(e) : 0][(f != "NULL") ? f_vocab_.GetId(f) : 0] = prob;
+//    cout << "before suspect." << endl;
+ //   cout << "e" << endl;
+    if(e_vocab_.KeyInMap(e) && f_vocab_.KeyInMap(f)) {
+      tm[(e != "NULL") ? e_vocab_.GetId(e) : 0][(f != "NULL") ? f_vocab_.GetId(f) : 0] = prob;
+    }
+  //  cout << "after suspect." << endl;
   }
 
   //cout << "P(super|student): " << tm[e_vocab_.GetId("student")][f_vocab_.GetId("super")] << endl;

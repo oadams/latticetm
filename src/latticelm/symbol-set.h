@@ -29,6 +29,23 @@ public:
   SymbolSet() : map_(), vocab_(), freeze_(false) { }
   ~SymbolSet() { }
 
+  bool KeyInMap(const Key & key) {
+    auto it = map_.find(key);
+    if(it != map_.end()) {
+      return true;
+    }
+    return false;
+  }
+
+  WordId SafeGetId(const Key & key) {
+    auto it = map_.find(key);
+    if(it != map_.end()) {
+      return it->second;
+    } else {
+      THROW_ERROR("Key not present in map.");
+    }
+  }
+
   WordId GetId(const Key & key) {
     auto it = map_.find(key);
     if(it != map_.end()) {
