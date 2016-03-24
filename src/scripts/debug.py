@@ -37,6 +37,7 @@ giza_same = 0
 
 both_better = 0
 both_worse = 0
+giza_better_tm_worse = 0
 for i in range(len(plain_lines)):
     gold_line = gold_lines[i].split()
     plain_line = plain_lines[i].split()
@@ -51,6 +52,15 @@ for i in range(len(plain_lines)):
         giza_better += 1
         if tm_dist < plain_dist:
             both_better += 1
+        if tm_dist > plain_dist:
+            giza_better_tm_worse += 1
+            #print(i)
+            #print("Gold:\t", gold_line)
+            #print("Plain (med %d):\t" % plain_dist, plain_line)
+            #print("GIZA (med %d):\t" % giza_dist, giza_line)
+            #print("TM (med %d):\t" % tm_dist, tm_line)
+            #print("===")
+            #raw_input()
     elif giza_dist > plain_dist:
         giza_worse += 1
         if tm_dist > plain_dist:
@@ -68,6 +78,7 @@ for i in range(len(plain_lines)):
             print("TM (med %d):\t" % tm_dist, tm_line)
             print("===")
             raw_input()
+            pass
     elif tm_dist > plain_dist:
         count_worse += 1
     else:
@@ -78,3 +89,4 @@ print("\tLat-TM\tGIZA\tboth")
 print("Better:\t%d\t%d\t%d" % (count_better,giza_better,both_better))
 print("Worse:\t%d\t%d\t%d" % (count_worse,giza_worse,both_worse))
 print("Same:\t%d\t%d" % (count_same,giza_same))
+print("Giza better TM worse: %d" % giza_better_tm_worse)
