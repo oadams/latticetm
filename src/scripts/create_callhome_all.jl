@@ -19,27 +19,48 @@ function create_callhome_subsets()
     end
 end
 
-function train_giza_subsets()
+HOME="/home/oadams"
+giza_dir="$HOME/tools/giza-pp"
+moses_dir="$HOME/tools/mosesdecoder"
+num_cores=3
+
+function train_giza(dataset, num_sents)
+    src="data/out/plain_best_paths/$dataset.es"
+    tgt="data/fisher-callhome/corpus/ldc/$dataset.en.nopunc.lower"
+    OUT_DIR="$HOME/code/latticelm-v2/data/out/giza-pp/$dataset/n$num_sents"
+    run(`mkdir -p $OUT_DIR/train`)
+    run(`touch $OUT_DIR/fakelm`)
+    run(pipeline(`tail -n $num_sents $src`, stdout="$OUT_DIR/$dataset.es"))
+    run(pipeline(`tail -n $num_sents $tgt`, stdout="$OUT_DIR/$dataset.en"))
+    run(`$moses_dir/scripts/training/train-model.perl \
+        -root-dir $OUT_DIR/train \
+        -cores $num_cores \
+        -corpus $OUT_DIR/$dataset -f es -e en \
+        -alignment grow-diag-final-and -reordering msd-bidirectional-fe \
+        -lm 0:5:$OUT_DIR/fakelm \
+        -external-bin-dir $giza_dir/bin &> $OUT_DIR/training.out`)
+end
+
+function train_giza_subsets(dataset)
     for i = 0:10
         n = test_num+i*test_num
-        run(`./run_giza callhome_all $n`)
+        train_giza(dataset, n)
     end
 end
 
-#train_giza_subsets()
-
-function decode_evaluate_giza_subsets()
-    for i = 0:10
+function decode_evaluate_giza_subsets(trainset, evlset)
+    for i = 0:4
         n = test_num+i*test_num
-        tm_file = "data/out/giza-pp/callhome_all/n$n/train/model/lex.e2f"
-        cmd=pipeline(`./decode_giza callhome_evltest $tm_file`,
-                stdout="data/out/giza-pp/callhome_all/n$n/callhome_evltest.es")
-        println(cmd)
+        tm_file = "data/out/giza-pp/$trainset/n$n/train/model/lex.e2f"
+        cmd=pipeline(`./decode_giza $evlset $tm_file`,
+                stdout="data/out/giza-pp/$trainset/n$n/$evlset.es")
+        #println(cmd)
         run(cmd)
-        cmd=`python ../nlp/per.py --ref data/fisher-callhome/corpus/ldc/callhome_evltest.es.nopunc.lower --hypo data/out/giza-pp/callhome_all/n$n/callhome_evltest.es`
-        println(cmd)
+        cmd=`python ../nlp/per.py --ref data/fisher-callhome/corpus/ldc/$evlset.es.nopunc.lower --hypo data/out/giza-pp/$trainset/n$n/$evlset.es`
+        #println(cmd)
         run(cmd)
     end
 end
 
-decode_evaluate_giza_subsets()
+#train_giza_subsets("callhome_all")
+decode_evaluate_giza_subsets("callhome_all", "callhome_evltest")
