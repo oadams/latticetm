@@ -49,7 +49,8 @@ function train_giza_subsets(dataset)
 end
 
 function decode_evaluate_giza_subsets(trainset, evlset)
-    for i = 0:4
+    sents_per_hour=20875/(20)
+    for i = 0:10
         n = test_num+i*test_num
         tm_file = "data/out/giza-pp/$trainset/n$n/train/model/lex.e2f"
         cmd=pipeline(`./decode_giza $evlset $tm_file`,
@@ -58,7 +59,9 @@ function decode_evaluate_giza_subsets(trainset, evlset)
         run(cmd)
         cmd=`python ../nlp/per.py --ref data/fisher-callhome/corpus/ldc/$evlset.es.nopunc.lower --hypo data/out/giza-pp/$trainset/n$n/$evlset.es`
         #println(cmd)
-        run(cmd)
+        wer=chomp(readall(cmd))
+        hours=n/sents_per_hour
+        println("(",hours,",",wer,")")
     end
 end
 
