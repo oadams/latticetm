@@ -65,5 +65,21 @@ function decode_evaluate_giza_subsets(trainset, evlset)
     end
 end
 
+function latticetm_scaleup(train_set, test_set)
+    sents_per_hour=20875/(20)
+    epochs=30
+    alpha=1
+    weight=1
+    for i = 0:10
+        train_num = test_num+i*test_num
+        run(`./run $train_set $epochs $alpha $weight $train_num $test_num`)
+        cmd=`./wer $train_set $epochs $alpha $weight $train_num $test_set $test_num`
+        wer=chomp(readall(cmd))
+        hours=train_num/sents_per_hour
+        println("(",hours,",",wer,")")
+    end
+end
+
 #train_giza_subsets("callhome_all")
-decode_evaluate_giza_subsets("callhome_all", "callhome_evltest")
+#decode_evaluate_giza_subsets("callhome_all", "callhome_evltest")
+latticetm_scaleup("callhome_all", "callhome_evltest")

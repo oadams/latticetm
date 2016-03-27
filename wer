@@ -4,8 +4,10 @@ name=$1
 epochs=$2
 alpha=$3
 weight=$4
-num_sents=$5
+train_len=$5
+test_set=$6
+test_len=$7
 
 python ~/code/nlp/per.py \
-		--ref data/fisher-callhome/corpus/ldc/${name}.es.nopunc.lower \
-		--hypo data/out/transcriptions/${name}.epochs${epochs}.alpha${alpha}.weight${weight}.num_sents${num_sents}.es \
+		--ref data/fisher-callhome/corpus/ldc/${test_set}.es.nopunc.lower \
+		--hypo data/out/transcriptions/${name}.epochs${epochs}.alpha${alpha}.weight${weight}.train_len${train_len}.test_len${test_len}.es \

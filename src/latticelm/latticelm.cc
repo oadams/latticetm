@@ -16,17 +16,24 @@ namespace po = boost::program_options;
 
 namespace latticelm {
 
-void LatticeLM::PerformTrainingLexTM(const vector<DataLatticePtr> & all_lattices, LexicalTM & tm, int num_sents) {
-  vector<DataLatticePtr>::const_iterator last;
-  if(num_sents >= 0) {
-    last = all_lattices.begin() + (num_sents-1);
-  } else {
-    last = all_lattices.end();
-  }
-  vector<DataLatticePtr> lattices(all_lattices.begin(), last);
+void LatticeLM::PerformTrainingLexTM(const vector<DataLatticePtr> & all_lattices, LexicalTM & tm, int train_len, int test_len) {
+
+  assert(train_len > 0);
+  assert(test_len > 0);
+
+  vector<DataLatticePtr>::const_iterator train_start;
+  train_start = all_lattices.begin() + (all_lattices.size() - train_len);
+  vector<DataLatticePtr> train_lattices(train_start, all_lattices.end());
+  assert(train_lattices.size() == train_len);
+
+  vector<DataLatticePtr>::const_iterator test_start;
+  test_start = all_lattices.begin() + (all_lattices.size() - test_len);
+  vector<DataLatticePtr> test_lattices(test_start, all_lattices.end());
+  assert(test_lattices.size() == test_len);
+
   // Perform training
-  vector<int> order(lattices.size()); std::iota(order.begin(), order.end(), 0);
-  vector<Alignment> alignments(lattices.size());
+  vector<int> order(train_lattices.size()); std::iota(order.begin(), order.end(), 0);
+  vector<Alignment> alignments(train_lattices.size());
   for(int epoch = 1; epoch <= epochs_; epoch++) {
     std::shuffle(order.begin(), order.end(), *GlobalVars::rndeng);
     LLStats ep_stats;
@@ -37,7 +44,7 @@ void LatticeLM::PerformTrainingLexTM(const vector<DataLatticePtr> & all_lattices
         tm.RemoveSample(alignments[align_id]);
       cerr << "align " << align_count << ", align_id: " << align_id << endl;
       cerr << "time: " << time_.Elapsed() << endl;
-      alignments[align_id] = tm.CreateSample(*lattices[align_id], ep_stats);
+      alignments[align_id] = tm.CreateSample(*train_lattices[align_id], ep_stats);
       tm.AddSample(alignments[align_id]);
       //tm.PrintCounts();
     }
@@ -47,7 +54,7 @@ void LatticeLM::PerformTrainingLexTM(const vector<DataLatticePtr> & all_lattices
   }
   tm.Normalize(epochs_);
   tm.PrintParams("data/out/params/tm.avg");
-  tm.FindBestPaths(all_lattices, "data/out/alignments.txt");
+  tm.FindBestPaths(test_lattices, "data/out/alignments.txt");
 }
 
 template <class LM>
@@ -90,7 +97,8 @@ int LatticeLM::main(int argc, char** argv) {
       ("verbose", po::value<int>()->default_value(1), "Verbosity of messages to print")
       ("concentration", po::value<float>()->default_value(1.0), "The concentration parameter for the Dirichlet process of the translation model.")
       ("plain_best_paths", po::value<string>()->default_value(""), "Just output the 1-best path through the supplied lattice.")
-      ("num_sents", po::value<int>()->default_value(-1), "Number of training sents")
+      ("train_len", po::value<int>()->default_value(-1), "Number of training sents")
+      ("test_len", po::value<int>()->default_value(-1), "Number of test sents")
       ("using_external_tm", po::value<string>()->default_value(""), "For using an external TM to perform decoding")
       ;
   boost::program_options::variables_map vm;
@@ -155,7 +163,7 @@ int LatticeLM::main(int argc, char** argv) {
     PerformTraining(lattices, hlm);
   } else if(model_type_ == "lextm") {
     LexicalTM tm(cids_, trans_ids_, alpha_);
-    PerformTrainingLexTM(lattices, tm, vm["num_sents"].as<int>());
+    PerformTrainingLexTM(lattices, tm, vm["train_len"].as<int>(), vm["test_len"].as<int>());
   }
 
   return 0;

@@ -4,7 +4,8 @@ name=$1
 epochs=$2
 alpha=$3
 weight=$4
-num_sents=$5
+train_len=$5
+test_len=$6
 
 ./src/latticelm/latticelm \
 	--train_file data/fisher-callhome/corpus/plf/${name}.es.lat \
@@ -12,6 +13,6 @@ num_sents=$5
 	--beam 1 --char_n 1 --word_n 1 \
 	--file_format openfst --model_type lextm \
 	--epochs ${epochs} --concentration ${alpha} --lattice_weight ${weight} \
-	--num_sents ${num_sents} \
+	--train_len ${train_len} --test_len ${test_len}\
 	2> data/out/log \
-	> data/out/transcriptions/${name}.epochs${epochs}.alpha${alpha}.weight${weight}.num_sents${num_sents}.es \
+	> data/out/transcriptions/${name}.epochs${epochs}.alpha${alpha}.weight${weight}.train_len${train_len}.test_len${test_len}.es \
