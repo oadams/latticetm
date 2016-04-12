@@ -22,6 +22,7 @@ public:
   template <class LM>
   void PerformTraining(const vector<DataLatticePtr> & lattices, LM & lm);
   void PerformTrainingLexTM(const vector<DataLatticePtr> & lattices, LexicalTM & lm, int train_len, int test_len);
+  void Prototyping(const vector<DataLatticePtr> & lattices);
   
 protected:
 

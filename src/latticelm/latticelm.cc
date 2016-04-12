@@ -16,6 +16,41 @@ namespace po = boost::program_options;
 
 namespace latticelm {
 
+void LatticeLM::Prototyping(const vector<DataLatticePtr> & lattices) {
+  cout << "PROTOTYPING" << endl;
+
+  // Outputting the lattices for visualization.
+  for(int i = 0; i < lattices.size(); i++) {
+    DataLattice lattice = *(lattices[i]);
+    lattice.GetFst().Write("data/phoneme-prototyping/lattices/" + to_string(i) + ".fst");
+  }
+
+  // Creation of an empty lexicon
+  VectorFst<LogArc> lexicon;
+  VectorFst<LogArc>::StateId home = lexicon.AddState();
+  lexicon.SetStart(home);
+  lexicon.SetFinal(home, LogArc::Weight::One());
+  vector<std::string> phonemes = {"h","aU","s","O","f"};
+  for(auto phoneme : phonemes) {
+    cout << cids_.GetId(phoneme) << endl;
+    lexicon.AddArc(home, LogArc(cids_.GetId(phoneme), cids_.GetId("ph("+phoneme+")"), LogWeight::One(), home));
+  }
+  lexicon.Write("data/phoneme-prototyping/lexicon.fst");
+
+  // Composing the lattices with the lexicon
+  for(int i = 0; i < lattices.size(); i++) {
+    DataLattice lattice = *(lattices[i]);
+    ComposeFst<LogArc> latlex(*(lattices[0]).GetFst(), lexicon);
+    VectorFst<LogArc> vecfst(latlex);
+    vecfst.Write("latlex.fst");
+    lattice.GetFst().Write("data/phoneme-prototyping/lattices/" + to_string(i) + ".fst");
+  }
+
+  cids_.Write("data/phoneme-prototyping/symbols.txt");
+
+  exit(0);
+}
+
 void LatticeLM::PerformTrainingLexTM(const vector<DataLatticePtr> & all_lattices, LexicalTM & tm, int train_len, int test_len) {
 
   assert(train_len > 0);
@@ -136,6 +171,8 @@ int LatticeLM::main(int argc, char** argv) {
 
   // Load data
   vector<DataLatticePtr> lattices = DataLattice::ReadFromFile(file_format_, lattice_weight_, vm["train_file"].as<string>(), vm["trans_file"].as<string>(), cids_, trans_ids_);
+
+  Prototyping(lattices);
 
   if(!vm["plain_best_paths"].as<string>().empty()) {
     LexicalTM tm(cids_, trans_ids_, alpha_);
