@@ -260,16 +260,17 @@ int LatticeLM::main(int argc, char** argv) {
 
   cout << map[x] << endl;
 
-  Prototyping(lattices);
+  //Prototyping(lattices);
+  vector<std::string> phonemes = {"h","aU","s","O","f"};
 
   if(!vm["plain_best_paths"].as<string>().empty()) {
-    LexicalTM tm(cids_, trans_ids_, alpha_);
+    LexicalTM tm(cids_, trans_ids_, alpha_, phonemes);
     tm.FindBestPlainLatticePaths(lattices, "data/out/" + vm["plain_best_paths"].as<string>());
     return 0;
   }
 
   if(!vm["using_external_tm"].as<string>().empty()) {
-    LexicalTM tm(cids_, trans_ids_, alpha_);
+    LexicalTM tm(cids_, trans_ids_, alpha_, phonemes);
     vector<vector<fst::LogWeight>> tm_params = tm.load_TM(vm["using_external_tm"].as<string>());
     tm.FindBestPaths(lattices, "data/out/external_tm_alignments.txt", tm_params);
     return 0;
@@ -287,7 +288,7 @@ int LatticeLM::main(int argc, char** argv) {
     HierarchicalLM hlm(cids_.size(), char_n_, word_n_);
     PerformTraining(lattices, hlm);
   } else if(model_type_ == "lextm") {
-    LexicalTM tm(cids_, trans_ids_, alpha_);
+    LexicalTM tm(cids_, trans_ids_, alpha_, phonemes);
     PerformTrainingLexTM(lattices, tm, vm["train_len"].as<int>(), vm["test_len"].as<int>());
   }
 

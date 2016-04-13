@@ -14,6 +14,53 @@
 using namespace latticelm;
 using namespace fst;
 
+vector<string> LexicalTM::GetPhonemes(const vector<DataLatticePtr> & lattices) {
+  // TODO Implement
+  for(auto lattice_ptr : lattices) {
+    DataLattice lattice = *lattice_ptr;
+  }
+  vector<string> phonemes;
+  return phonemes;
+}
+
+VectorFst<LogArc> LexicalTM::CreateEmptyLexicon(const vector<string> & phonemes) {
+  VectorFst<LogArc> lexicon;
+  VectorFst<LogArc>::StateId home = lexicon.AddState();
+  lexicon.SetStart(home);
+  lexicon.SetFinal(home, LogArc::Weight::One());
+  for(auto phoneme : phonemes) {
+    lexicon.AddArc(home, LogArc(f_vocab_.GetId(phoneme), f_vocab_.GetId(phoneme), LogWeight::One(), home));
+  }
+  lexicon.Write("data/phoneme-prototyping/lexicons/empty.fst");
+
+  return lexicon;
+}
+
+VectorFst<LogArc> LexicalTM::CreateTM(const DataLattice & lattice) {
+  VectorFst<LogArc> tm;
+  VectorFst<LogArc>::StateId home = tm.AddState();
+  tm.SetStart(home);
+  tm.SetFinal(home, LogArc::Weight::One());
+
+  VectorFst<LogArc>::StateId phoneme_home = tm.AddState();
+  for(auto phoneme : phonemes_) {
+    tm.AddArc(home, LogArc(f_vocab_.GetId(phoneme), f_vocab_.GetId("<eps>"), log_gamma_, phoneme_home));
+    tm.AddArc(phoneme_home, LogArc(f_vocab_.GetId(phoneme), f_vocab_.GetId("<eps>"), log_gamma_, phoneme_home));
+  }
+  // TODO Decide whether I'm using the complement of gamma in the arc back home.
+  // Perhaps it's a bit like a discount parameter? At the moment, all paths are
+  // equally likely, and caching only comes into play with full words. But
+  // paths that have a number of small words are more likely only because of
+  // combinatorics. Using the complement of gamma penalizes wrapping up a word, and so
+  // actually encourages longer words.
+  // For now jusg using a weight of 1, but consider changing it.
+  tm.AddArc(phoneme_home, LogArc(f_vocab_.GetId("<eps>"), f_vocab_.GetId("<unk>"), LogWeight::One(), home));
+
+  tm.Write("data/phoneme-prototyping/tm.fst");
+
+  return tm;
+}
+
 void LexicalTM::RemoveSample(const Alignment & align) {
   //Reduce the counts for the alignments.
   for(int i = 0; i < align.size(); i++) {
