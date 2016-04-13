@@ -33,17 +33,43 @@ void LatticeLM::Prototyping(const vector<DataLatticePtr> & lattices) {
   lexicon.SetFinal(home, LogArc::Weight::One());
   vector<std::string> phonemes = {"h","aU","s","O","f"};
   for(auto phoneme : phonemes) {
-    cout << cids_.GetId(phoneme) << endl;
     lexicon.AddArc(home, LogArc(cids_.GetId(phoneme), cids_.GetId("ph("+phoneme+")"), LogWeight::One(), home));
   }
   lexicon.Write("data/phoneme-prototyping/lexicon.fst");
+
+  // Creation of an empty translation model (ie, only the spelling model component).
+  VectorFst<LogArc> tm;
+
+  VectorFst<LogArc>::StateId tm_home = tm.AddState();
+  tm.SetStart(tm_home);
+  tm.SetFinal(tm_home, LogArc::Weight::One());
+
+  float lambda = 0.9;
+  LogWeight log_lambda = LogWeight(-log(lambda));
+
+  VectorFst<LogArc>::StateId phoneme_state = tm.AddState();
+  for(auto phoneme : phonemes) {
+    tm.AddArc(tm_home, LogArc(cids_.GetId("ph("+phoneme+")"), 0, log_lambda, phoneme_state));
+    tm.AddArc(phoneme_state, LogArc(cids_.GetId("ph("+phoneme+")"), 0, log_lambda, phoneme_state));
+  }
+  // TODO Decide whether I'm using log_lambda_comp in the arc back home.
+  // Perhaps it's a bit like a discount parameter? At the moment, all paths are
+  // equally likely, and caching only comes into play with full words. But
+  // paths that have a number of small words are more likely, because of
+  // combinatorics. Using log_lambda_comp penalizes wrapping upa a word, and so
+  // actually encourages longer words somewhat.
+  LogWeight log_lambda_comp = LogWeight(-log(1-lambda));
+  tm.AddArc(phoneme_state, LogArc(0, cids_.GetId("<UNK>"), LogWeight::One(), tm_home));
 
   // Composing the lattices with the lexicon
   for(int i = 0; i < lattices.size(); i++) {
     DataLattice lattice = *(lattices[i]);
     ComposeFst<LogArc> latlex(lattice.GetFst(), lexicon);
     VectorFst<LogArc> vecfst(latlex);
-    vecfst.Write("data/phoneme-prototyping/composed/" + to_string(i) + ".fst");
+    vecfst.Write("data/phoneme-prototyping/composed/latlex" + to_string(i) + ".fst");
+    ComposeFst<LogArc> full(latlex, tm);
+    VectorFst<LogArc> fullvecfst(full);
+    fullvecfst.Write("data/phoneme-prototyping/composed/full" + to_string(i) + ".fst");
   }
 
   cids_.Write("data/phoneme-prototyping/symbols.txt");
