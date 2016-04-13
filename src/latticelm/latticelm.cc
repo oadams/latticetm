@@ -10,7 +10,11 @@
 #include <latticelm/lexical-tm.h>
 #include <latticelm/ll-stats.h>
 #include <latticelm/macros.h>
+
 #include <fst/compose.h>
+#include <latticelm/sampgen.h>
+#include <sstream>
+#include <unordered_map>
 
 using namespace std;
 namespace po = boost::program_options;
@@ -59,22 +63,73 @@ void LatticeLM::Prototyping(const vector<DataLatticePtr> & lattices) {
   // combinatorics. Using log_lambda_comp penalizes wrapping upa a word, and so
   // actually encourages longer words somewhat.
   LogWeight log_lambda_comp = LogWeight(-log(1-lambda));
-  tm.AddArc(phoneme_state, LogArc(0, cids_.GetId("<UNK>"), LogWeight::One(), tm_home));
+  tm.AddArc(phoneme_state, LogArc(0, cids_.GetId("<unk>"), LogWeight::One(), tm_home));
 
-  // Composing the lattices with the lexicon
+  // Composing the lattices with the lexicon and TM.
   for(int i = 0; i < lattices.size(); i++) {
     DataLattice lattice = *(lattices[i]);
+    cout << "X" << endl;
     ComposeFst<LogArc> latlex(lattice.GetFst(), lexicon);
     VectorFst<LogArc> vecfst(latlex);
     vecfst.Write("data/phoneme-prototyping/composed/latlex" + to_string(i) + ".fst");
-    ComposeFst<LogArc> full(latlex, tm);
-    VectorFst<LogArc> fullvecfst(full);
+    cout << "Y" << endl;
+    ComposeFst<LogArc> composed(latlex, tm);
+    cout << "Z" << endl;
+    VectorFst<LogArc> fullvecfst(composed);
     fullvecfst.Write("data/phoneme-prototyping/composed/full" + to_string(i) + ".fst");
+
+    // Sample a path!
+    VectorFst<LogArc> sample_path;
+    SampGen(composed, sample_path);
+    sample_path.Write("data/phoneme-prototyping/samples/" + to_string(i) + ".fst");
+
+
+    // Add the words in the path to the lexicon and TM
+    vector<WordId> buf;
+    VectorFst<LogArc>::StateId cur = composed.Start();
+    while(true) {
+      fst::ArcIterator<Fst<LogArc>> arc_iter(composed, cur);
+      if(arc_iter.Done()) break;
+      const LogArc& arc = arc_iter.Value();
+      if(arc.ilabel == cids_.GetId("<eps>")) {
+        if (arc.olabel == cids_.GetId("<unk>")) {
+          // Then add the word to the lexicon
+          AddWord(lexicon,buf);
+        }
+      } else {
+        buf.push_back(arc.ilabel);
+      }
+      cur = arc.nextstate;
+    }
+    lexicon.Write("data/phoneme-prototyping/lexicons/" + to_string(i) + ".fst");
+
+    cout << endl;
   }
 
   cids_.Write("data/phoneme-prototyping/symbols.txt");
 
   exit(0);
+}
+
+// Add a newly sampled sequence to the lexicon
+void LatticeLM::AddWord(VectorFst<LogArc> & lexicon, vector<WordId> phonemes) {
+  VectorFst<LogArc>::StateId home = lexicon.Start();
+  VectorFst<LogArc>::StateId cur = home;
+  ostringstream word_stream;
+  if(phonemes.size() > 0) {
+    VectorFst<LogArc>::StateId next = lexicon.AddState();
+    lexicon.AddArc(home, LogArc(phonemes[0], cids_.GetId("<eps>"), LogWeight::One(), next));
+    word_stream << cids_.GetSym(phonemes[0]);
+    cur = next;
+  }
+  for(int i = 1; i < phonemes.size(); i++) {
+    VectorFst<LogArc>::StateId next = lexicon.AddState();
+    lexicon.AddArc(cur, LogArc(phonemes[i], cids_.GetId("<eps>"), LogWeight::One(), next));
+    word_stream << "+" << cids_.GetSym(phonemes[i]);
+    cur = next;
+  }
+  lexicon.AddArc(cur, LogArc(cids_.GetId("<eps>"), cids_.GetId(word_stream.str()), LogWeight::One(), home));
+  cout << word_stream.str() << endl;
 }
 
 void LatticeLM::PerformTrainingLexTM(const vector<DataLatticePtr> & all_lattices, LexicalTM & tm, int train_len, int test_len) {
@@ -187,8 +242,9 @@ int LatticeLM::main(int argc, char** argv) {
 
   // Initialize the vocabulary
   cids_.GetId("<eps>");
-  cids_.GetId("<s>");
-  cids_.GetId("</s>");
+  cids_.GetId("<unk>");
+  //cids_.GetId("<s>");
+  //cids_.GetId("</s>");
 
   // Initialize the translation vocabulary
   trans_ids_.GetId("<eps>");
@@ -197,6 +253,12 @@ int LatticeLM::main(int argc, char** argv) {
 
   // Load data
   vector<DataLatticePtr> lattices = DataLattice::ReadFromFile(file_format_, lattice_weight_, vm["train_file"].as<string>(), vm["trans_file"].as<string>(), cids_, trans_ids_);
+
+  unordered_map<pair<WordId,WordId>, int> map;
+  pair<WordId,WordId> x (2,7);
+  map.insert({x, 5});
+
+  cout << map[x] << endl;
 
   Prototyping(lattices);
 
