@@ -10,6 +10,7 @@
 #include <latticelm/lexical-tm.h>
 #include <latticelm/ll-stats.h>
 #include <latticelm/macros.h>
+#include <fst/compose.h>
 
 using namespace std;
 namespace po = boost::program_options;
@@ -40,10 +41,9 @@ void LatticeLM::Prototyping(const vector<DataLatticePtr> & lattices) {
   // Composing the lattices with the lexicon
   for(int i = 0; i < lattices.size(); i++) {
     DataLattice lattice = *(lattices[i]);
-    ComposeFst<LogArc> latlex(*(lattices[0]).GetFst(), lexicon);
+    ComposeFst<LogArc> latlex(lattice.GetFst(), lexicon);
     VectorFst<LogArc> vecfst(latlex);
-    vecfst.Write("latlex.fst");
-    lattice.GetFst().Write("data/phoneme-prototyping/lattices/" + to_string(i) + ".fst");
+    vecfst.Write("data/phoneme-prototyping/composed/" + to_string(i) + ".fst");
   }
 
   cids_.Write("data/phoneme-prototyping/symbols.txt");
