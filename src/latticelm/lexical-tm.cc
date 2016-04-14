@@ -50,6 +50,62 @@ VectorFst<LogArc> LexicalTM::CreateTM(const DataLattice & lattice) {
   return tm;
 }
 
+// Takes a vector of phonemes and returns a string representation.
+std::string LexicalTM::PhonemeWord(vector<WordId> phonemes) {
+  ostringstream word_stream;
+  if(phonemes.size() > 0) {
+    word_stream << f_vocab_.GetSym(phonemes[0]);
+  }
+  for(int i = 1; i < phonemes.size(); i++) {
+    word_stream << "+" << f_vocab_.GetSym(phonemes[i]);
+  }
+  return word_stream.str();
+}
+
+/* Takes a phoneme--word Alignment and converts it to a phoneme-word--word alignment */
+Alignment LexicalTM::PhonemeWordAlignment(const Alignment & ph_alignment) {
+  Alignment word_alignment;
+  vector<WordId> ph_buf;
+  for(auto arrow : ph_alignment) {
+    if(arrow.first == f_vocab_.GetId("<eps>")) {
+      word_alignment.push_back({f_vocab_.GetId(PhonemeWord(ph_buf)), arrow.second});
+    } else {
+      ph_buf.push_back(arrow.first);
+    }
+  }
+  return word_alignment;
+}
+
+// Add a newly sampled sequence to the lexicon
+void LexicalTM::AddWord(VectorFst<LogArc> & lexicon, vector<WordId> phonemes) {
+
+  std::string phoneme_word = PhonemeWord(phonemes);
+
+  // Adding the word to the lexicon
+  VectorFst<LogArc>::StateId home = lexicon.Start();
+  VectorFst<LogArc>::StateId cur = home;
+  ostringstream word_stream;
+  if(phonemes.size() > 0) {
+    VectorFst<LogArc>::StateId next = lexicon.AddState();
+    lexicon.AddArc(home, LogArc(phonemes[0], f_vocab_.GetId("<eps>"), LogWeight::One(), next));
+    cur = next;
+  }
+  for(int i = 1; i < phonemes.size(); i++) {
+    VectorFst<LogArc>::StateId next = lexicon.AddState();
+    lexicon.AddArc(cur, LogArc(phonemes[i], f_vocab_.GetId("<eps>"), LogWeight::One(), next));
+    cur = next;
+  }
+  lexicon.AddArc(cur, LogArc(f_vocab_.GetId("<eps>"), f_vocab_.GetId(phoneme_word), LogWeight::One(), home));
+
+  // If phoneme_word is in the map, increment it.
+  WordId ph_word_id = f_vocab_.GetId(phoneme_word);
+  if(foreign_count_map_.count(ph_word_id) == 1) {
+    foreign_count_map_[ph_word_id]++;
+  } else {
+    foreign_count_map_[ph_word_id] = 1;
+  }
+}
+
 void LexicalTM::RemoveSample(const Alignment & align) {
   //Reduce the counts for the alignments.
   for(int i = 0; i < align.size(); i++) {
@@ -63,6 +119,19 @@ void LexicalTM::AddSample(const Alignment & align) {
   for(int i = 0; i < align.size(); i++) {
     counts_[align[i].second][align[i].first]++;
     assert(counts_[align[i].second][align[i].first] > 0);
+  }
+
+  // Add words from the foreign side of the alignment to the lexicon and counts
+  vector<WordId> ph_buf;
+  for(auto arrow : align) {
+    if(arrow.first == f_vocab_.GetId("<eps>")) {
+      if (arrow.second == f_vocab_.GetId("<unk>")) {
+        // Then add the word to the lexicon
+        AddWord(lexicon_, ph_buf);
+      }
+    } else {
+      ph_buf.push_back(arrow.first);
+    }
   }
 }
 
@@ -165,9 +234,23 @@ int in(WordId word_id, Sentence sentence) {
   return ret;
 }
 
-LogWeight LexicalTM::DirichletProb(int e, int f) {
-    // %TODO test the correctness of this function
+// TODO Rename this function once we start clearing out the old code.
+/* Yields P(f|e) using a Dirichlet process.*/
+LogWeight LexicalTM::DirichletProbNew(WordId e, WordId f) {
+  // Get the total counts of e
+  int e_total = 0;
+  for(auto it = count_map_.begin(); it != count_map_.end(); i++) {
+    if(it->first.first == e) {
+      e_total += it->second;
+    }
+  }
 
+  LogWeight numer = fst::Plus(fst::Times(log_alpha_,base_dist_xxx), LogWeight(-log(count_map_[{f,e}])));
+  LogWeight denom = fst::Plus(log_alpha_, LogWeight(-log(e_total)));
+  return fst::Divide(numer, denom);
+}
+
+LogWeight LexicalTM::DirichletProb(int e, int f) {
     // Get the total counts of e.
     int e_total = 0;
     for(int f_prime = 0; f_prime < f_vocab_size_; f_prime++) {
@@ -303,9 +386,26 @@ Alignment LexicalTM::CreateSample(const DataLattice & lattice, LLStats & stats) 
 
   Alignment align = FstToAlign(sample_fst);
   cout << align << endl;
+  Alignment word_alignment = PhonemeWordAlignment(align);
+  cout << word_alignment << endl;
+
+  // Now sample the <unk>s in the alignment
+  Alignment alignment = SampleUnks(unk_alignment, lattice.GetTranslation());
 
   return align;
 
+}
+
+Alignment LexicalTM::SampleUnks(Alignment unk_alignment, Sentence translation) {
+  Alignment alignment;
+  for(auto arrow : unk_alignment) {
+    if(arrow.second == f_vocab_.GetId("<unk>")) {
+      // Decide what to replace <unk> with.
+    } else {
+      alignment.push_back(arrow);
+    }
+  }
+  return alignment;
 }
 
 void LexicalTM::ResampleParameters() {

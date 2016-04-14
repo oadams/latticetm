@@ -94,7 +94,7 @@ void LatticeLM::Prototyping(const vector<DataLatticePtr> & lattices) {
       if(arc.ilabel == cids_.GetId("<eps>")) {
         if (arc.olabel == cids_.GetId("<unk>")) {
           // Then add the word to the lexicon
-          AddWord(lexicon,buf);
+          //AddWord(lexicon,buf);
         }
       } else {
         buf.push_back(arc.ilabel);
@@ -111,27 +111,7 @@ void LatticeLM::Prototyping(const vector<DataLatticePtr> & lattices) {
   exit(0);
 }
 
-// Add a newly sampled sequence to the lexicon
-void LatticeLM::AddWord(VectorFst<LogArc> & lexicon, vector<WordId> phonemes) {
-  VectorFst<LogArc>::StateId home = lexicon.Start();
-  VectorFst<LogArc>::StateId cur = home;
-  ostringstream word_stream;
-  if(phonemes.size() > 0) {
-    VectorFst<LogArc>::StateId next = lexicon.AddState();
-    lexicon.AddArc(home, LogArc(phonemes[0], cids_.GetId("<eps>"), LogWeight::One(), next));
-    word_stream << cids_.GetSym(phonemes[0]);
-    cur = next;
-  }
-  for(int i = 1; i < phonemes.size(); i++) {
-    VectorFst<LogArc>::StateId next = lexicon.AddState();
-    lexicon.AddArc(cur, LogArc(phonemes[i], cids_.GetId("<eps>"), LogWeight::One(), next));
-    word_stream << "+" << cids_.GetSym(phonemes[i]);
-    cur = next;
-  }
-  lexicon.AddArc(cur, LogArc(cids_.GetId("<eps>"), cids_.GetId(word_stream.str()), LogWeight::One(), home));
-  cout << word_stream.str() << endl;
-}
-
+// TODO Perhaps this method should really be in LexicalTM.
 void LatticeLM::PerformTrainingLexTM(const vector<DataLatticePtr> & all_lattices, LexicalTM & tm, int train_len, int test_len) {
 
   assert(train_len > 0);
@@ -161,7 +141,7 @@ void LatticeLM::PerformTrainingLexTM(const vector<DataLatticePtr> & all_lattices
       cerr << "align " << align_count << ", align_id: " << align_id << endl;
       cerr << "time: " << time_.Elapsed() << endl;
       alignments[align_id] = tm.CreateSample(*train_lattices[align_id], ep_stats);
-      //tm.AddSample(alignments[align_id]);
+      tm.AddSample(alignments[align_id]);
     }
     cerr << "Finished epoch " << epoch << ": char=" << ep_stats.words_ << ", ppl=" << ep_stats.CalcPPL() << " (s=" << time_.Elapsed() << ")" << endl;
     //tm.ResampleParameters();
