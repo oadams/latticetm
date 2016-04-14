@@ -161,16 +161,15 @@ void LatticeLM::PerformTrainingLexTM(const vector<DataLatticePtr> & all_lattices
       cerr << "align " << align_count << ", align_id: " << align_id << endl;
       cerr << "time: " << time_.Elapsed() << endl;
       alignments[align_id] = tm.CreateSample(*train_lattices[align_id], ep_stats);
-      tm.AddSample(alignments[align_id]);
-      //tm.PrintCounts();
+      //tm.AddSample(alignments[align_id]);
     }
     cerr << "Finished epoch " << epoch << ": char=" << ep_stats.words_ << ", ppl=" << ep_stats.CalcPPL() << " (s=" << time_.Elapsed() << ")" << endl;
-    tm.ResampleParameters();
+    //tm.ResampleParameters();
     //tm.PrintParams("data/out/params/tm.sample" + to_string(epoch));
   }
-  tm.Normalize(epochs_);
-  tm.PrintParams("data/out/params/tm.avg");
-  tm.FindBestPaths(test_lattices, "data/out/alignments.txt");
+  //tm.Normalize(epochs_);
+  //tm.PrintParams("data/out/params/tm.avg");
+  //tm.FindBestPaths(test_lattices, "data/out/alignments.txt");
 }
 
 template <class LM>
@@ -261,16 +260,16 @@ int LatticeLM::main(int argc, char** argv) {
   cout << map[x] << endl;
 
   //Prototyping(lattices);
-  vector<std::string> phonemes = {"h","aU","s","O","f"};
+  float gamma = 0.9;
 
   if(!vm["plain_best_paths"].as<string>().empty()) {
-    LexicalTM tm(cids_, trans_ids_, alpha_, phonemes);
+    LexicalTM tm(cids_, trans_ids_, alpha_, gamma, DataLattice::GetPhonemes(lattices));
     tm.FindBestPlainLatticePaths(lattices, "data/out/" + vm["plain_best_paths"].as<string>());
     return 0;
   }
 
   if(!vm["using_external_tm"].as<string>().empty()) {
-    LexicalTM tm(cids_, trans_ids_, alpha_, phonemes);
+    LexicalTM tm(cids_, trans_ids_, alpha_, gamma, DataLattice::GetPhonemes(lattices));
     vector<vector<fst::LogWeight>> tm_params = tm.load_TM(vm["using_external_tm"].as<string>());
     tm.FindBestPaths(lattices, "data/out/external_tm_alignments.txt", tm_params);
     return 0;
@@ -288,7 +287,7 @@ int LatticeLM::main(int argc, char** argv) {
     HierarchicalLM hlm(cids_.size(), char_n_, word_n_);
     PerformTraining(lattices, hlm);
   } else if(model_type_ == "lextm") {
-    LexicalTM tm(cids_, trans_ids_, alpha_, phonemes);
+    LexicalTM tm(cids_, trans_ids_, alpha_, gamma, DataLattice::GetPhonemes(lattices));
     PerformTrainingLexTM(lattices, tm, vm["train_len"].as<int>(), vm["test_len"].as<int>());
   }
 

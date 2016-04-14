@@ -14,15 +14,6 @@
 using namespace latticelm;
 using namespace fst;
 
-vector<string> LexicalTM::GetPhonemes(const vector<DataLatticePtr> & lattices) {
-  // TODO Implement
-  for(auto lattice_ptr : lattices) {
-    DataLattice lattice = *lattice_ptr;
-  }
-  vector<string> phonemes;
-  return phonemes;
-}
-
 VectorFst<LogArc> LexicalTM::CreateEmptyLexicon(const vector<string> & phonemes) {
   VectorFst<LogArc> lexicon;
   VectorFst<LogArc>::StateId home = lexicon.AddState();
@@ -55,8 +46,6 @@ VectorFst<LogArc> LexicalTM::CreateTM(const DataLattice & lattice) {
   // actually encourages longer words.
   // For now jusg using a weight of 1, but consider changing it.
   tm.AddArc(phoneme_home, LogArc(f_vocab_.GetId("<eps>"), f_vocab_.GetId("<unk>"), LogWeight::One(), home));
-
-  tm.Write("data/phoneme-prototyping/tm.fst");
 
   return tm;
 }
@@ -296,23 +285,24 @@ VectorFst<LogArc> LexicalTM::CreateReducedTM(const DataLattice & lattice, const 
 
 Alignment LexicalTM::CreateSample(const DataLattice & lattice, LLStats & stats) {
 
-  // Perform reduction on TM to make it conform to the lattice.translation_
-  VectorFst<LogArc> reduced_tm = CreateReducedTM(lattice);
-  //reduced_tm.Write("reduced_tm.fst");
+  // Create a translation model that constrains its options to the translation of the lattice.
+  VectorFst<LogArc> tm = CreateTM(lattice);
+  tm.Write("data/phoneme-prototyping/tm.fst");
 
-  //lattice.GetFst().Write("lattice.fst");
+  // Compose the lattice with the lexicon.
+  ComposeFst<LogArc> latlex(lattice.GetFst(), lexicon_);
+  ComposeFst<LogArc> composed_fst(latlex, tm);
 
-  // Compose the lattice with the reduced tm.
-  ComposeFst<LogArc> composed_fst(lattice.GetFst(), reduced_tm);
-  //VectorFst<LogArc> vecfst(composed_fst);
-  //vecfst.Write("composed.fst");
+  VectorFst<LogArc> vecfst(composed_fst);
+  vecfst.Write("data/phoneme-prototyping/composed.fst");
 
   // Sample from the composed Fst.
   VectorFst<LogArc> sample_fst;
-  /*stats.lik_ +=*/ SampGen(composed_fst, sample_fst);
-  //sample_fst.Write("sample.fst");
+  SampGen(composed_fst, sample_fst);
+  sample_fst.Write("data/phoneme-prototyping/sample.fst");
 
   Alignment align = FstToAlign(sample_fst);
+  cout << align << endl;
 
   return align;
 

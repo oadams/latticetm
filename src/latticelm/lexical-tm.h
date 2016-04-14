@@ -16,12 +16,13 @@ class LexicalTM {
 public:
 
   LexicalTM( SymbolSet<std::string> f_vocab, SymbolSet<std::string> e_vocab,
-      float alpha, const vector<string> & phonemes) {
+      float alpha, float gamma, const vector<string> & phonemes) {
     f_vocab_size_ = f_vocab.size();
     e_vocab_size_ = e_vocab.size();
     f_vocab_ = f_vocab;
     e_vocab_ = e_vocab;
     log_alpha_ = LogWeight(-log(alpha));
+    log_gamma_ = LogWeight(-log(gamma));
 
     // Zero the count vectors. Assign uniform log probabilities to the CPD
     for(int i=0; i < e_vocab_size_; i++) {

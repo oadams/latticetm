@@ -44,6 +44,8 @@ public:
   static void StringFromBacktrace(const int final_state_id, const vector<int> & prev_state, const vector<pair<int,int>> & prev_align, SymbolSet<string> & dict, ostream & out_stream);
   static void AlignmentFromBacktrace(const int final_state_id, const vector<int> & prev_state, const vector<pair<int,int>> & prev_align, SymbolSet<string> & dict, SymbolSet<string> & trans_dict, ofstream & align_file);
 
+  static vector<string> GetPhonemes(const vector<DataLatticePtr> & lattices);
+
   static int GetFinal(const fst::Fst<fst::LogArc> & fst) {
     for (StateIterator<Fst<LogArc>> iter(fst);
         !iter.Done();

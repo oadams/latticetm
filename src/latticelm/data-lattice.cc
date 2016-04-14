@@ -228,3 +228,14 @@ void DataLattice::AlignmentFromBacktrace(const VectorFst<LogArc>::StateId final_
   }
   align_file << endl;
 }
+
+/* Returns the phonemes present in the lattice */
+vector<string> DataLattice::GetPhonemes(const vector<DataLatticePtr> & lattices) {
+  // TODO Implement
+  for(auto lattice_ptr : lattices) {
+    DataLattice lattice = *lattice_ptr;
+  }
+  vector<string> phonemes = {"h", "aU", "s", "O", "f"};
+  return phonemes;
+}
+
