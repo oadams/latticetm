@@ -139,6 +139,7 @@ void LatticeLM::PerformTrainingLexTM(const vector<DataLatticePtr> & all_lattices
       cerr << "align " << align_count << ", align_id: " << align_id << endl;
       cerr << "time: " << time_.Elapsed() << endl;
       alignments[align_id] = tm.CreateSample(*train_lattices[align_id], ep_stats);
+
       tm.AddSample(alignments[align_id]);
     }
     cerr << "Finished epoch " << epoch << ": char=" << ep_stats.words_ << ", ppl=" << ep_stats.CalcPPL() << " (s=" << time_.Elapsed() << ")" << endl;

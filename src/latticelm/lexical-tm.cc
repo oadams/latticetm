@@ -20,9 +20,26 @@ VectorFst<LogArc> LexicalTM::CreateEmptyLexicon(const vector<string> & phonemes)
   VectorFst<LogArc>::StateId home = lexicon.AddState();
   lexicon.SetStart(home);
   lexicon.SetFinal(home, LogArc::Weight::One());
+  /*
   for(auto phoneme : phonemes) {
     lexicon.AddArc(home, LogArc(f_vocab_.GetId(phoneme), f_vocab_.GetId(phoneme), LogWeight::One(), home));
   }
+  */
+
+  VectorFst<LogArc>::StateId phoneme_home = lexicon.AddState();
+
+  for(auto phoneme : phonemes_) {
+    lexicon.AddArc(home, LogArc(f_vocab_.GetId(phoneme), f_vocab_.GetId("<eps>"), log_gamma_, phoneme_home));
+    lexicon.AddArc(phoneme_home, LogArc(f_vocab_.GetId(phoneme), f_vocab_.GetId("<eps>"), log_gamma_, phoneme_home));
+  }
+  // TODO Decide whether I'm using the complement of gamma in the arc back home.
+  // Perhaps it's a bit like a discount parameter? At the moment, all paths are
+  // equally likely, and caching only comes into play with full words. But
+  // paths that have a number of small words are more likely only because of
+  // combinatorics. Using the complement of gamma penalizes wrapping up a word, and so
+  // actually encourages longer words.
+  // For now jusg using a weight of 1, but consider changing it.
+  lexicon.AddArc(phoneme_home, LogArc(f_vocab_.GetId("<eps>"), f_vocab_.GetId("<unk>"), LogWeight::One(), home));
   lexicon.Write("data/phoneme-prototyping/lexicons/empty.fst");
 
   return lexicon;
@@ -34,19 +51,27 @@ VectorFst<LogArc> LexicalTM::CreateTM(const DataLattice & lattice) {
   tm.SetStart(home);
   tm.SetFinal(home, LogArc::Weight::One());
 
-  VectorFst<LogArc>::StateId phoneme_home = tm.AddState();
-  for(auto phoneme : phonemes_) {
-    tm.AddArc(home, LogArc(f_vocab_.GetId(phoneme), e_vocab_.GetId("<eps>"), log_gamma_, phoneme_home));
-    tm.AddArc(phoneme_home, LogArc(f_vocab_.GetId(phoneme), e_vocab_.GetId("<eps>"), log_gamma_, phoneme_home));
+  // Adding <unk>:e arcs
+  for(auto e : lattice.GetTranslation()) {
+    // Get the total counts of e
+    int e_total = 0;
+    for(auto it = count_map_.begin(); it != count_map_.end(); it++) {
+      if(it->first.first == e) {
+        e_total += it->second;
+      }
+    }
+    // Determine the probability
+    LogWeight prob = fst::Divide(log_alpha_,fst::Plus(log_alpha_, LogWeight(-log(e_total))));
+    /* Weight shouldn't be 1, but related to the base dist.*/
+    tm.AddArc(home, LogArc(f_vocab_.GetId("<unk>"), e, prob, home));
   }
-  // TODO Decide whether I'm using the complement of gamma in the arc back home.
-  // Perhaps it's a bit like a discount parameter? At the moment, all paths are
-  // equally likely, and caching only comes into play with full words. But
-  // paths that have a number of small words are more likely only because of
-  // combinatorics. Using the complement of gamma penalizes wrapping up a word, and so
-  // actually encourages longer words.
-  // For now jusg using a weight of 1, but consider changing it.
-  tm.AddArc(phoneme_home, LogArc(f_vocab_.GetId("<eps>"), e_vocab_.GetId("<unk>"), LogWeight::One(), home));
+
+  // Add f:e arcs
+  for(auto e : lattice.GetTranslation()) {
+    for(auto f : lattice.GetFWordIds()) {
+      tm.AddArc(home, LogArc(f, e, DirichletProbNew(e,f), home));
+    }
+  }
 
   return tm;
 }
@@ -126,12 +151,6 @@ void LexicalTM::RemoveSample(const Alignment & align) {
 }
 
 void LexicalTM::AddSample(const Alignment & align) {
-  /*
-  for(int i = 0; i < align.size(); i++) {
-    counts_[align[i].second][align[i].first]++;
-    assert(counts_[align[i].second][align[i].first] > 0);
-  }
-  */
   for(auto arrow : align) {
     if(count_map_.count(arrow) == 1) {
       count_map_[arrow]++;
@@ -153,6 +172,7 @@ void LexicalTM::AddSample(const Alignment & align) {
       ph_buf.push_back(arrow.first);
     }
   }
+
 }
 
 void LexicalTM::PrintCounts() {
@@ -407,6 +427,7 @@ Alignment LexicalTM::CreateSample(const DataLattice & lattice, LLStats & stats) 
   VectorFst<LogArc> veclatlex(latlex);
   veclatlex.Write("data/phoneme-prototyping/latlex.fst");
 
+
   ComposeFst<LogArc> composed_fst(latlex, tm);
   cout << "Composed latlex with tm..." << endl;
 
@@ -417,17 +438,13 @@ Alignment LexicalTM::CreateSample(const DataLattice & lattice, LLStats & stats) 
   VectorFst<LogArc> sample_fst;
   SampGen(composed_fst, sample_fst);
   sample_fst.Write("data/phoneme-prototyping/sample.fst");
+  Alignment alignment = FstToAlign(sample_fst);
+  PrintAlign(alignment);
 
-  Alignment unk_alignment = FstToAlign(sample_fst);
-  PrintAlign(unk_alignment);
   /*
   Alignment unk_alignment = PhonemeWordAlignment(align);
   PrintAlign(unk_alignment);
   */
-
-  // Now sample the <unk>s in the alignment
-  Alignment alignment = AssignUnks(unk_alignment, lattice.GetTranslation());
-  PrintAlign(alignment);
 
   return alignment;
 
@@ -450,26 +467,6 @@ void LexicalTM::PrintAlign(const Alignment & alignment) {
     }
   }
   cout << "]" << endl;
-}
-
-/* Randomly decide what English words the <unks> take the value of */
-Alignment LexicalTM::AssignUnks(const Alignment & unk_alignment, const Sentence & translation) {
-
-  std::random_device random_device;
-  std::mt19937 engine{random_device()};
-  std::uniform_int_distribution<int> dist(0, translation.size() -1);
-
-  Alignment alignment;
-  for(auto arrow : unk_alignment) {
-    if(arrow.second == e_vocab_.GetId("<unk>")) {
-      // Decide what to replace <unk> with.
-      WordId e = translation[dist(engine)];
-      alignment.push_back({arrow.first, e});
-    } else {
-      alignment.push_back(arrow);
-    }
-  }
-  return alignment;
 }
 
 void LexicalTM::ResampleParameters() {
