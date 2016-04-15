@@ -106,8 +106,6 @@ void LatticeLM::Prototyping(const vector<DataLatticePtr> & lattices) {
     cout << endl;
   }
 
-  cids_.Write("data/phoneme-prototyping/symbols.txt");
-
   exit(0);
 }
 

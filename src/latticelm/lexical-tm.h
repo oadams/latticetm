@@ -76,13 +76,16 @@ public:
   std::string PhonemeWord(vector<WordId> phonemes);
   Alignment PhonemeWordAlignment(const Alignment & ph_alignment);
   LogWeight DirichletProbNew(WordId e, WordId f);
+  Alignment AssignUnks(const Alignment & unk_alignment, const Sentence & translation);
+  void PrintAlign(const Alignment & align);
+  void WriteSymbolSets();
 
 protected:
 
   // Assuming our vocab fits in an int.
   int f_vocab_size_;
   int e_vocab_size_;
-  SymbolSet<std::string> f_vocab_;
+  SymbolSet<std::string> f_vocab_; // Used for both foreign words and phonemes.
   SymbolSet<std::string> e_vocab_;
   vector<std::string> phonemes_;
   LogWeight log_alpha_; //Concentration parameter for the Dirichlet process.

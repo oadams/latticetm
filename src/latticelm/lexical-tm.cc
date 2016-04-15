@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <boost/bind.hpp>
 #include <boost/algorithm/string.hpp>
+#include <random>
 
 using namespace latticelm;
 using namespace fst;
@@ -35,8 +36,8 @@ VectorFst<LogArc> LexicalTM::CreateTM(const DataLattice & lattice) {
 
   VectorFst<LogArc>::StateId phoneme_home = tm.AddState();
   for(auto phoneme : phonemes_) {
-    tm.AddArc(home, LogArc(f_vocab_.GetId(phoneme), f_vocab_.GetId("<eps>"), log_gamma_, phoneme_home));
-    tm.AddArc(phoneme_home, LogArc(f_vocab_.GetId(phoneme), f_vocab_.GetId("<eps>"), log_gamma_, phoneme_home));
+    tm.AddArc(home, LogArc(f_vocab_.GetId(phoneme), e_vocab_.GetId("<eps>"), log_gamma_, phoneme_home));
+    tm.AddArc(phoneme_home, LogArc(f_vocab_.GetId(phoneme), e_vocab_.GetId("<eps>"), log_gamma_, phoneme_home));
   }
   // TODO Decide whether I'm using the complement of gamma in the arc back home.
   // Perhaps it's a bit like a discount parameter? At the moment, all paths are
@@ -45,7 +46,7 @@ VectorFst<LogArc> LexicalTM::CreateTM(const DataLattice & lattice) {
   // combinatorics. Using the complement of gamma penalizes wrapping up a word, and so
   // actually encourages longer words.
   // For now jusg using a weight of 1, but consider changing it.
-  tm.AddArc(phoneme_home, LogArc(f_vocab_.GetId("<eps>"), f_vocab_.GetId("<unk>"), LogWeight::One(), home));
+  tm.AddArc(phoneme_home, LogArc(f_vocab_.GetId("<eps>"), e_vocab_.GetId("<unk>"), LogWeight::One(), home));
 
   return tm;
 }
@@ -53,22 +54,25 @@ VectorFst<LogArc> LexicalTM::CreateTM(const DataLattice & lattice) {
 // Takes a vector of phonemes and returns a string representation.
 std::string LexicalTM::PhonemeWord(vector<WordId> phonemes) {
   ostringstream word_stream;
+  word_stream << "w(";
   if(phonemes.size() > 0) {
     word_stream << f_vocab_.GetSym(phonemes[0]);
   }
   for(int i = 1; i < phonemes.size(); i++) {
     word_stream << "+" << f_vocab_.GetSym(phonemes[i]);
   }
+  word_stream << ")";
   return word_stream.str();
 }
 
 /* Takes a phoneme--word Alignment and converts it to a phoneme-word--word alignment */
 Alignment LexicalTM::PhonemeWordAlignment(const Alignment & ph_alignment) {
   Alignment word_alignment;
-  vector<WordId> ph_buf;
+  vector<WordId> && ph_buf = vector<WordId>();
   for(auto arrow : ph_alignment) {
     if(arrow.first == f_vocab_.GetId("<eps>")) {
       word_alignment.push_back({f_vocab_.GetId(PhonemeWord(ph_buf)), arrow.second});
+      ph_buf = vector<WordId>();
     } else {
       ph_buf.push_back(arrow.first);
     }
@@ -108,26 +112,42 @@ void LexicalTM::AddWord(VectorFst<LogArc> & lexicon, vector<WordId> phonemes) {
 
 void LexicalTM::RemoveSample(const Alignment & align) {
   //Reduce the counts for the alignments.
+  /*
   for(int i = 0; i < align.size(); i++) {
     counts_[align[i].second][align[i].first]--;
     assert(counts_[align[i].second][align[i].first] >= 0);
   }
+  */
+  for(auto arrow : align) {
+    assert(count_map_.count(arrow) == 1);
+    count_map_[arrow]--;
+  }
+
 }
 
 void LexicalTM::AddSample(const Alignment & align) {
-  //Reduce the counts for the alignments.
+  /*
   for(int i = 0; i < align.size(); i++) {
     counts_[align[i].second][align[i].first]++;
     assert(counts_[align[i].second][align[i].first] > 0);
   }
+  */
+  for(auto arrow : align) {
+    if(count_map_.count(arrow) == 1) {
+      count_map_[arrow]++;
+    } else {
+      count_map_[arrow] = 0;
+    }
+  }
 
   // Add words from the foreign side of the alignment to the lexicon and counts
-  vector<WordId> ph_buf;
+  vector<WordId> && ph_buf = vector<WordId>();
   for(auto arrow : align) {
     if(arrow.first == f_vocab_.GetId("<eps>")) {
-      if (arrow.second == f_vocab_.GetId("<unk>")) {
+      if (arrow.second == e_vocab_.GetId("<unk>")) {
         // Then add the word to the lexicon
         AddWord(lexicon_, ph_buf);
+        ph_buf = vector<WordId>();
       }
     } else {
       ph_buf.push_back(arrow.first);
@@ -235,17 +255,17 @@ int in(WordId word_id, Sentence sentence) {
 }
 
 // TODO Rename this function once we start clearing out the old code.
-/* Yields P(f|e) using a Dirichlet process.*/
+/* Yields P(f|e) using a Dirichlet process over observed foreign tokens.*/
 LogWeight LexicalTM::DirichletProbNew(WordId e, WordId f) {
   // Get the total counts of e
   int e_total = 0;
-  for(auto it = count_map_.begin(); it != count_map_.end(); i++) {
+  for(auto it = count_map_.begin(); it != count_map_.end(); it++) {
     if(it->first.first == e) {
       e_total += it->second;
     }
   }
 
-  LogWeight numer = fst::Plus(fst::Times(log_alpha_,base_dist_xxx), LogWeight(-log(count_map_[{f,e}])));
+  LogWeight numer = fst::Plus(fst::Times(log_alpha_,1.0/foreign_count_map_.size()), LogWeight(-log(count_map_[{f,e}])));
   LogWeight denom = fst::Plus(log_alpha_, LogWeight(-log(e_total)));
   return fst::Divide(numer, denom);
 }
@@ -366,15 +386,29 @@ VectorFst<LogArc> LexicalTM::CreateReducedTM(const DataLattice & lattice, const 
 }
 */
 
+void LexicalTM::WriteSymbolSets() {
+  f_vocab_.Write("data/phoneme-prototyping/f_symbols.txt");
+  e_vocab_.Write("data/phoneme-prototyping/e_symbols.txt");
+}
+
 Alignment LexicalTM::CreateSample(const DataLattice & lattice, LLStats & stats) {
+
+  WriteSymbolSets();
 
   // Create a translation model that constrains its options to the translation of the lattice.
   VectorFst<LogArc> tm = CreateTM(lattice);
   tm.Write("data/phoneme-prototyping/tm.fst");
 
+  WriteSymbolSets();
+
   // Compose the lattice with the lexicon.
   ComposeFst<LogArc> latlex(lattice.GetFst(), lexicon_);
+  cout << "Composed lattice with lexicon..." << endl;
+  VectorFst<LogArc> veclatlex(latlex);
+  veclatlex.Write("data/phoneme-prototyping/latlex.fst");
+
   ComposeFst<LogArc> composed_fst(latlex, tm);
+  cout << "Composed latlex with tm..." << endl;
 
   VectorFst<LogArc> vecfst(composed_fst);
   vecfst.Write("data/phoneme-prototyping/composed.fst");
@@ -384,23 +418,53 @@ Alignment LexicalTM::CreateSample(const DataLattice & lattice, LLStats & stats) 
   SampGen(composed_fst, sample_fst);
   sample_fst.Write("data/phoneme-prototyping/sample.fst");
 
-  Alignment align = FstToAlign(sample_fst);
-  cout << align << endl;
-  Alignment word_alignment = PhonemeWordAlignment(align);
-  cout << word_alignment << endl;
+  Alignment unk_alignment = FstToAlign(sample_fst);
+  PrintAlign(unk_alignment);
+  /*
+  Alignment unk_alignment = PhonemeWordAlignment(align);
+  PrintAlign(unk_alignment);
+  */
 
   // Now sample the <unk>s in the alignment
-  Alignment alignment = SampleUnks(unk_alignment, lattice.GetTranslation());
+  Alignment alignment = AssignUnks(unk_alignment, lattice.GetTranslation());
+  PrintAlign(alignment);
 
-  return align;
+  return alignment;
 
 }
 
-Alignment LexicalTM::SampleUnks(Alignment unk_alignment, Sentence translation) {
+void LexicalTM::PrintAlign(const Alignment & alignment) {
+  cout << "[";
+  for(auto arrow : alignment) {
+    if(f_vocab_.GetSym(arrow.first) == "<eps>") {
+      cout << "<eps";
+    } else {
+      cout << "<" << f_vocab_.GetSym(arrow.first);
+    }
+    if(e_vocab_.GetSym(arrow.second) == "<eps>") {
+      cout << ",eps>,";
+    } else if(e_vocab_.GetSym(arrow.second) == "<unk>") {
+      cout << ",unk>,";
+    } else {
+      cout << "," << e_vocab_.GetSym(arrow.second) << ">,";
+    }
+  }
+  cout << "]" << endl;
+}
+
+/* Randomly decide what English words the <unks> take the value of */
+Alignment LexicalTM::AssignUnks(const Alignment & unk_alignment, const Sentence & translation) {
+
+  std::random_device random_device;
+  std::mt19937 engine{random_device()};
+  std::uniform_int_distribution<int> dist(0, translation.size() -1);
+
   Alignment alignment;
   for(auto arrow : unk_alignment) {
-    if(arrow.second == f_vocab_.GetId("<unk>")) {
+    if(arrow.second == e_vocab_.GetId("<unk>")) {
       // Decide what to replace <unk> with.
+      WordId e = translation[dist(engine)];
+      alignment.push_back({arrow.first, e});
     } else {
       alignment.push_back(arrow);
     }
