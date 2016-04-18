@@ -23,6 +23,7 @@ public:
     e_vocab_ = e_vocab;
     log_alpha_ = LogWeight(-log(alpha));
     log_gamma_ = LogWeight(-log(gamma));
+    gamma_ = gamma;
 
     // Zero the count vectors. Assign uniform log probabilities to the CPD
     for(int i=0; i < e_vocab_size_; i++) {
@@ -90,6 +91,7 @@ protected:
   vector<std::string> phonemes_;
   LogWeight log_alpha_; //Concentration parameter for the Dirichlet process.
   LogWeight log_gamma_; //Exponent used for the spelling model.
+  float gamma_;
 
   // A grid that stores the sampling of the CPD at each iteration and gets
   // normalized after all the sampling is complete.

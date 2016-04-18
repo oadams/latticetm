@@ -20,26 +20,18 @@ VectorFst<LogArc> LexicalTM::CreateEmptyLexicon(const vector<string> & phonemes)
   VectorFst<LogArc>::StateId home = lexicon.AddState();
   lexicon.SetStart(home);
   lexicon.SetFinal(home, LogArc::Weight::One());
-  /*
-  for(auto phoneme : phonemes) {
-    lexicon.AddArc(home, LogArc(f_vocab_.GetId(phoneme), f_vocab_.GetId(phoneme), LogWeight::One(), home));
-  }
-  */
 
   VectorFst<LogArc>::StateId phoneme_home = lexicon.AddState();
 
   for(auto phoneme : phonemes_) {
-    lexicon.AddArc(home, LogArc(f_vocab_.GetId(phoneme), f_vocab_.GetId("<eps>"), log_gamma_, phoneme_home));
-    lexicon.AddArc(phoneme_home, LogArc(f_vocab_.GetId(phoneme), f_vocab_.GetId("<eps>"), log_gamma_, phoneme_home));
+    lexicon.AddArc(home, LogArc(f_vocab_.GetId(phoneme), f_vocab_.GetId("<eps>"), 
+        Divide(LogWeight::One(), LogWeight(-log(phonemes_.size()))), phoneme_home));
+    lexicon.AddArc(phoneme_home, LogArc(f_vocab_.GetId(phoneme), f_vocab_.GetId("<eps>"),
+        Divide(log_gamma_, LogWeight(-log(phonemes_.size()))) , phoneme_home));
   }
-  // TODO Decide whether I'm using the complement of gamma in the arc back home.
-  // Perhaps it's a bit like a discount parameter? At the moment, all paths are
-  // equally likely, and caching only comes into play with full words. But
-  // paths that have a number of small words are more likely only because of
-  // combinatorics. Using the complement of gamma penalizes wrapping up a word, and so
-  // actually encourages longer words.
-  // For now jusg using a weight of 1, but consider changing it.
-  lexicon.AddArc(phoneme_home, LogArc(f_vocab_.GetId("<eps>"), f_vocab_.GetId("<unk>"), LogWeight::One(), home));
+
+  lexicon.AddArc(phoneme_home, LogArc(f_vocab_.GetId("<eps>"), f_vocab_.GetId("<unk>"),
+      LogWeight(-log(1-gamma_)), home));
   lexicon.Write("data/phoneme-prototyping/lexicons/empty.fst");
 
   return lexicon;
@@ -51,7 +43,7 @@ VectorFst<LogArc> LexicalTM::CreateTM(const DataLattice & lattice) {
   tm.SetStart(home);
   tm.SetFinal(home, LogArc::Weight::One());
 
-  // Adding <unk>:e arcs
+  // Adding x:e arcs
   for(auto e : lattice.GetTranslation()) {
     // Get the total counts of e
     int e_total = 0;
@@ -60,16 +52,17 @@ VectorFst<LogArc> LexicalTM::CreateTM(const DataLattice & lattice) {
         e_total += it->second;
       }
     }
+
+    // Add the <unk>:e arc.
     // Determine the probability
-    LogWeight prob = fst::Divide(log_alpha_,fst::Plus(log_alpha_, LogWeight(-log(e_total))));
+    LogWeight prob = Divide(log_alpha_, Plus(log_alpha_, LogWeight(-log(e_total))));
     /* Weight shouldn't be 1, but related to the base dist.*/
     tm.AddArc(home, LogArc(f_vocab_.GetId("<unk>"), e, prob, home));
-  }
 
-  // Add f:e arcs
-  for(auto e : lattice.GetTranslation()) {
+    // Add the f:e arcs.
     for(auto f : lattice.GetFWordIds()) {
-      tm.AddArc(home, LogArc(f, e, DirichletProbNew(e,f), home));
+      prob = Divide(LogWeight(-log(count_map_[{f,e}])), Plus(log_alpha_, LogWeight(-log(e_total))));
+      tm.AddArc(home, LogArc(f, e, prob, home));
     }
   }
 
@@ -163,7 +156,7 @@ void LexicalTM::AddSample(const Alignment & align) {
   vector<WordId> && ph_buf = vector<WordId>();
   for(auto arrow : align) {
     if(arrow.first == f_vocab_.GetId("<eps>")) {
-      if (arrow.second == e_vocab_.GetId("<unk>")) {
+      if(arrow.second == e_vocab_.GetId("<unk>")) {
         // Then add the word to the lexicon
         AddWord(lexicon_, ph_buf);
         ph_buf = vector<WordId>();
@@ -426,7 +419,6 @@ Alignment LexicalTM::CreateSample(const DataLattice & lattice, LLStats & stats) 
   cout << "Composed lattice with lexicon..." << endl;
   VectorFst<LogArc> veclatlex(latlex);
   veclatlex.Write("data/phoneme-prototyping/latlex.fst");
-
 
   ComposeFst<LogArc> composed_fst(latlex, tm);
   cout << "Composed latlex with tm..." << endl;
