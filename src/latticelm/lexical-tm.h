@@ -73,7 +73,7 @@ public:
   vector<string> GetPhonemes(const vector<DataLatticePtr> & lattices);
   VectorFst<LogArc> CreateEmptyLexicon(const vector<string> & phonemes);
   VectorFst<LogArc> CreateTM(const DataLattice & lattice);
-  void AddWord(VectorFst<LogArc> & lexicon, vector<WordId> phonemes);
+  void AddWord(VectorFst<LogArc> & lexicon, vector<WordId> phonemes, std::string phoneme_word);
   std::string PhonemeWord(vector<WordId> phonemes);
   Alignment PhonemeWordAlignment(const Alignment & ph_alignment);
   LogWeight DirichletProbNew(WordId e, WordId f);
@@ -103,11 +103,15 @@ protected:
 
   // Keys are pairs of foreign and English WordIds and values are couns of how
   // often the foreign word is aligned to the English word
-  std::unordered_map<std::pair<WordId,WordId>, int> count_map_;
+  std::unordered_map<std::pair<WordId,WordId>, int> align_count_;
   // A map that stores the number of times a foreign word occurs.
-  std::unordered_map<WordId, int> foreign_count_map_;
+  std::unordered_map<WordId, int> f_count_;
+  // A map that stores the number of times an English word occurs.
+  std::unordered_map<WordId, int> e_count_;
 
   VectorFst<LogArc> lexicon_;
+
+  //std::unordered_map<WordId, std::vector<StateId>> lexicon_states_;
 
 };
 

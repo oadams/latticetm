@@ -47,7 +47,7 @@ VectorFst<LogArc> LexicalTM::CreateTM(const DataLattice & lattice) {
   for(auto e : lattice.GetTranslation()) {
     // Get the total counts of e
     int e_total = 0;
-    for(auto it = count_map_.begin(); it != count_map_.end(); it++) {
+    for(auto it = align_count_.begin(); it != align_count_.end(); it++) {
       if(it->first.first == e) {
         e_total += it->second;
       }
@@ -61,7 +61,7 @@ VectorFst<LogArc> LexicalTM::CreateTM(const DataLattice & lattice) {
 
     // Add the f:e arcs.
     for(auto f : lattice.GetFWordIds()) {
-      prob = Divide(LogWeight(-log(count_map_[{f,e}])), Plus(log_alpha_, LogWeight(-log(e_total))));
+      prob = Divide(LogWeight(-log(align_count_[{f,e}])), Plus(log_alpha_, LogWeight(-log(e_total))));
       tm.AddArc(home, LogArc(f, e, prob, home));
     }
   }
@@ -84,6 +84,7 @@ std::string LexicalTM::PhonemeWord(vector<WordId> phonemes) {
 }
 
 /* Takes a phoneme--word Alignment and converts it to a phoneme-word--word alignment */
+/*
 Alignment LexicalTM::PhonemeWordAlignment(const Alignment & ph_alignment) {
   Alignment word_alignment;
   vector<WordId> && ph_buf = vector<WordId>();
@@ -97,11 +98,10 @@ Alignment LexicalTM::PhonemeWordAlignment(const Alignment & ph_alignment) {
   }
   return word_alignment;
 }
+*/
 
 // Add a newly sampled sequence to the lexicon
-void LexicalTM::AddWord(VectorFst<LogArc> & lexicon, vector<WordId> phonemes) {
-
-  std::string phoneme_word = PhonemeWord(phonemes);
+void LexicalTM::AddWord(VectorFst<LogArc> & lexicon, vector<WordId> phonemes, std::string phoneme_word) {
 
   // Adding the word to the lexicon
   VectorFst<LogArc>::StateId home = lexicon.Start();
@@ -118,14 +118,9 @@ void LexicalTM::AddWord(VectorFst<LogArc> & lexicon, vector<WordId> phonemes) {
     cur = next;
   }
   lexicon.AddArc(cur, LogArc(f_vocab_.GetId("<eps>"), f_vocab_.GetId(phoneme_word), LogWeight::One(), home));
+  WriteSymbolSets();
+  lexicon.Write("data/phoneme-prototyping/lexicon.fst");
 
-  // If phoneme_word is in the map, increment it.
-  WordId ph_word_id = f_vocab_.GetId(phoneme_word);
-  if(foreign_count_map_.count(ph_word_id) == 1) {
-    foreign_count_map_[ph_word_id]++;
-  } else {
-    foreign_count_map_[ph_word_id] = 1;
-  }
 }
 
 void LexicalTM::RemoveSample(const Alignment & align) {
@@ -136,36 +131,63 @@ void LexicalTM::RemoveSample(const Alignment & align) {
     assert(counts_[align[i].second][align[i].first] >= 0);
   }
   */
+
+  // The general idea is to decrement f_count_, e_count_, align_count_. If f_count_ is then empty, we want to remove that word from the lexicon.
+
   for(auto arrow : align) {
-    assert(count_map_.count(arrow) == 1);
-    count_map_[arrow]--;
+    assert(align_count_.count(arrow) == 1);
+    align_count_[arrow]--;
+    assert(align_count_[arrow] >= 0);
   }
 
 }
 
+/* Getting phoneme alignments, updates lexicon and cache.*/
 void LexicalTM::AddSample(const Alignment & align) {
-  for(auto arrow : align) {
-    if(count_map_.count(arrow) == 1) {
-      count_map_[arrow]++;
-    } else {
-      count_map_[arrow] = 0;
-    }
-  }
 
   // Add words from the foreign side of the alignment to the lexicon and counts
   vector<WordId> && ph_buf = vector<WordId>();
   for(auto arrow : align) {
     if(arrow.first == f_vocab_.GetId("<eps>")) {
-      if(arrow.second == e_vocab_.GetId("<unk>")) {
-        // Then add the word to the lexicon
-        AddWord(lexicon_, ph_buf);
-        ph_buf = vector<WordId>();
+      // This means the current phoneme-word is finished and we can update the cache and lexicon
+
+      // Construct a token that concatentates the phonemes.
+      string phoneme_word = PhonemeWord(ph_buf);
+      WordId ph_word_id = f_vocab_.GetId(phoneme_word);
+
+      // If phoneme_word is in the lexicon, increment the count. Otherwise, put
+      // it in the lexicon
+      if(f_count_.count(ph_word_id) == 1 && f_count_[ph_word_id] > 0) {
+        f_count_[ph_word_id]++;
+      } else {
+        // Then add the word to the lexicon update the foreign cache
+        AddWord(lexicon_, ph_buf, phoneme_word);
+        f_count_[ph_word_id] = 1;
       }
+
+      // Update the English cache.
+      if(e_count_.count(arrow.second) == 1 && e_count_[arrow.second] > 0) {
+        e_count_[arrow.second]++;
+      } else {
+        e_count_[arrow.second] = 1;
+      }
+
+      // Update the cache of alignments
+      std::pair<WordId, WordId> word_arrow = {ph_word_id, arrow.second};
+      if(align_count_.count(word_arrow) == 1 && align_count_[word_arrow] > 0) {
+        align_count_[word_arrow]++;
+      } else {
+        align_count_[word_arrow] = 1;
+      }
+
+      // Reset ph_buf for new word
+      ph_buf = vector<WordId>();
+
     } else {
+      // The phoneme word isn't over, so keep filling the buffer.
       ph_buf.push_back(arrow.first);
     }
   }
-
 }
 
 void LexicalTM::PrintCounts() {
@@ -269,6 +291,7 @@ int in(WordId word_id, Sentence sentence) {
 
 // TODO Rename this function once we start clearing out the old code.
 /* Yields P(f|e) using a Dirichlet process over observed foreign tokens.*/
+/*
 LogWeight LexicalTM::DirichletProbNew(WordId e, WordId f) {
   // Get the total counts of e
   int e_total = 0;
@@ -282,6 +305,7 @@ LogWeight LexicalTM::DirichletProbNew(WordId e, WordId f) {
   LogWeight denom = fst::Plus(log_alpha_, LogWeight(-log(e_total)));
   return fst::Divide(numer, denom);
 }
+*/
 
 LogWeight LexicalTM::DirichletProb(int e, int f) {
     // Get the total counts of e.
