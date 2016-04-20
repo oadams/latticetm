@@ -1,1 +1,1 @@
-libtool --mode=execute valgrind ./src/latticelm/latticelm --train_file data/phoneme-prototyping/german.lat --trans_file data/phoneme-prototyping/english.txt --epochs 1 --lattice_weight 1.0 --file_format openfst --model_type lextm --concentration 1.0 --train_len 2 --test_len 2
+libtool --mode=execute valgrind ./src/latticelm/latticelm --train_file data/phoneme-prototyping/german.lat --trans_file data/phoneme-prototyping/english.txt --epochs 2 --lattice_weight 1.0 --file_format openfst --model_type lextm --concentration 1.0 --train_len 2 --test_len 2

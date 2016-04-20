@@ -133,16 +133,16 @@ void LatticeLM::PerformTrainingLexTM(const vector<DataLatticePtr> & all_lattices
     LLStats ep_stats;
     int align_count = 0;
     for(int align_id : order) {
+      cerr << endl;
+      cerr << "align " << align_count << ", align_id: " << align_id << endl;
+      cerr << "time: " << time_.Elapsed() << endl;
       align_count++;
       if(epoch != 1)
         tm.RemoveSample(alignments[align_id]);
-      cerr << "align " << align_count << ", align_id: " << align_id << endl;
-      cerr << "time: " << time_.Elapsed() << endl;
       alignments[align_id] = tm.CreateSample(*train_lattices[align_id], ep_stats);
 
       tm.AddSample(alignments[align_id]);
     }
-    exit(0);
     cerr << "Finished epoch " << epoch << ": char=" << ep_stats.words_ << ", ppl=" << ep_stats.CalcPPL() << " (s=" << time_.Elapsed() << ")" << endl;
     //tm.ResampleParameters();
     //tm.PrintParams("data/out/params/tm.sample" + to_string(epoch));

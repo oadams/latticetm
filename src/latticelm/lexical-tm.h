@@ -111,7 +111,8 @@ protected:
 
   VectorFst<LogArc> lexicon_;
 
-  //std::unordered_map<WordId, std::vector<StateId>> lexicon_states_;
+  // The states associated with a given word in the lexicon.
+  std::unordered_map<WordId, std::vector<VectorFst<LogArc>::StateId>> lexicon_states_;
 
 };
 
