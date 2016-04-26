@@ -22,9 +22,9 @@ public:
   DataLattice() { }
   ~DataLattice() { }
  
-  static std::vector<DataLatticePtr> ReadFromFile(const std::string & format, float weight, const std::string & filename, const std::string & trans_filename, SymbolSet<std::string> & dict, SymbolSet<std::string> & trans_dict);
+  static std::vector<DataLatticePtr> ReadFromFile(const std::string & format, float weight, const std::string & filename, const std::string & trans_filename, SymbolSet<std::string> & dict, SymbolSet<std::string> & trans_dict, unordered_set<std::string> & phonemes);
   static std::vector<DataLatticePtr> ReadFromTextFile(const std::string & filename, float weight, SymbolSet<std::string> & dict);
-  static std::vector<DataLatticePtr> ReadFromOpenFSTFile(const std::string & filename, float weight, SymbolSet<std::string> & dict);
+  static std::vector<DataLatticePtr> ReadFromOpenFSTFile(const std::string & filename, float weight, SymbolSet<std::string> & dict, std::unordered_set<std::string> & phonemes);
   static void ReadTranslations(vector<DataLatticePtr> data_lattices, const string & trans_filename, SymbolSet<std::string> & trans_dict);
 
   const VectorFst<LogArc> & GetFst() const { return fst_; }
@@ -43,8 +43,6 @@ public:
   static void Dijkstra(const fst::Fst<fst::LogArc> & lattice, vector<int> & prev_state, vector<pair<int,int>> & prev_align, SymbolSet<string> & dict, SymbolSet<string> & trans_dict, bool debug=false);
   static void StringFromBacktrace(const int final_state_id, const vector<int> & prev_state, const vector<pair<int,int>> & prev_align, SymbolSet<string> & dict, ostream & out_stream);
   static void AlignmentFromBacktrace(const int final_state_id, const vector<int> & prev_state, const vector<pair<int,int>> & prev_align, SymbolSet<string> & dict, SymbolSet<string> & trans_dict, ofstream & align_file);
-
-  static vector<string> GetPhonemes(const vector<DataLatticePtr> & lattices);
 
   static int GetFinal(const fst::Fst<fst::LogArc> & fst) {
     for (StateIterator<Fst<LogArc>> iter(fst);

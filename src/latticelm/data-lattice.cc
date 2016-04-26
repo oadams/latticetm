@@ -10,12 +10,12 @@ using namespace latticelm;
 using namespace std;
 using namespace fst;
 
-vector<DataLatticePtr> DataLattice::ReadFromFile(const std::string & format, float weight, const std::string & filename, const std::string & trans_filename, SymbolSet<string> & dict, SymbolSet<string> & trans_dict) {
+vector<DataLatticePtr> DataLattice::ReadFromFile(const std::string & format, float weight, const std::string & filename, const std::string & trans_filename, SymbolSet<string> & dict, SymbolSet<string> & trans_dict, unordered_set<string> & phonemes) {
   vector<DataLatticePtr> data_lattices;
   if(format == "text") {
     data_lattices = ReadFromTextFile(filename, weight, dict);
   } else if (format == "openfst") {
-    data_lattices = ReadFromOpenFSTFile(filename, weight, dict);
+    data_lattices = ReadFromOpenFSTFile(filename, weight, dict, phonemes);
   } else {
     THROW_ERROR("Illegal file format: " << format);
   }
@@ -48,7 +48,7 @@ vector<DataLatticePtr> DataLattice::ReadFromTextFile(const std::string & filenam
   return ret;
 }
 
-vector<DataLatticePtr> DataLattice::ReadFromOpenFSTFile(const std::string & filename, float weight, SymbolSet<string> & dict) {
+vector<DataLatticePtr> DataLattice::ReadFromOpenFSTFile(const std::string & filename, float weight, SymbolSet<string> & dict, unordered_set<string> & phonemes) {
   /** Be wary of the assumptions this method makes:
     *   - The input file includes some number of FSTs, each of which is separated by a blank line.
     *   - An FST description is comprised of a number of lines. Each line
@@ -99,6 +99,7 @@ vector<DataLatticePtr> DataLattice::ReadFromOpenFSTFile(const std::string & file
     to_state = stoi(line_tokens[1]);
     WordId in = dict.GetId(line_tokens[2]);
     WordId out = dict.GetId(line_tokens[3]);
+    phonemes.insert(line_tokens[2]);
     LogWeight arc_weight = LogWeight(stof(line_tokens[4])*weight);
     // Add any necessary states before we add the arc.
     while(num_states < from_state+1 || num_states < to_state+1) {
@@ -228,14 +229,3 @@ void DataLattice::AlignmentFromBacktrace(const VectorFst<LogArc>::StateId final_
   }
   align_file << endl;
 }
-
-/* Returns the phonemes present in the lattice */
-vector<string> DataLattice::GetPhonemes(const vector<DataLatticePtr> & lattices) {
-  // TODO Implement
-  for(auto lattice_ptr : lattices) {
-    DataLattice lattice = *lattice_ptr;
-  }
-  vector<string> phonemes = {"h", "aU", "s", "O", "f"};
-  return phonemes;
-}
-

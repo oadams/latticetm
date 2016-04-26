@@ -230,8 +230,10 @@ int LatticeLM::main(int argc, char** argv) {
   //trans_ids_.GetId("<s>");
   //trans_ids_.GetId("</s>");
 
+  unordered_set<std::string> phonemes;
+
   // Load data
-  vector<DataLatticePtr> lattices = DataLattice::ReadFromFile(file_format_, lattice_weight_, vm["train_file"].as<string>(), vm["trans_file"].as<string>(), cids_, trans_ids_);
+  vector<DataLatticePtr> lattices = DataLattice::ReadFromFile(file_format_, lattice_weight_, vm["train_file"].as<string>(), vm["trans_file"].as<string>(), cids_, trans_ids_, phonemes);
 
   unordered_map<pair<WordId,WordId>, int> map;
   pair<WordId,WordId> x (2,7);
@@ -243,13 +245,13 @@ int LatticeLM::main(int argc, char** argv) {
   float gamma = 0.9;
 
   if(!vm["plain_best_paths"].as<string>().empty()) {
-    LexicalTM tm(cids_, trans_ids_, alpha_, gamma, DataLattice::GetPhonemes(lattices));
+    LexicalTM tm(cids_, trans_ids_, alpha_, gamma, phonemes);
     tm.FindBestPlainLatticePaths(lattices, "data/out/" + vm["plain_best_paths"].as<string>());
     return 0;
   }
 
   if(!vm["using_external_tm"].as<string>().empty()) {
-    LexicalTM tm(cids_, trans_ids_, alpha_, gamma, DataLattice::GetPhonemes(lattices));
+    LexicalTM tm(cids_, trans_ids_, alpha_, gamma, phonemes);
     vector<vector<fst::LogWeight>> tm_params = tm.load_TM(vm["using_external_tm"].as<string>());
     tm.FindBestPaths(lattices, "data/out/external_tm_alignments.txt", tm_params);
     return 0;
@@ -267,7 +269,7 @@ int LatticeLM::main(int argc, char** argv) {
     HierarchicalLM hlm(cids_.size(), char_n_, word_n_);
     PerformTraining(lattices, hlm);
   } else if(model_type_ == "lextm") {
-    LexicalTM tm(cids_, trans_ids_, alpha_, gamma, DataLattice::GetPhonemes(lattices));
+    LexicalTM tm(cids_, trans_ids_, alpha_, gamma, phonemes);
     PerformTrainingLexTM(lattices, tm, vm["train_len"].as<int>(), vm["test_len"].as<int>());
   }
 

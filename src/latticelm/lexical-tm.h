@@ -15,10 +15,11 @@ class LexicalTM {
 
 public:
 
-  LexicalTM( SymbolSet<std::string> f_vocab, SymbolSet<std::string> e_vocab,
-      float alpha, float gamma, const vector<string> & phonemes) {
+  LexicalTM(SymbolSet<std::string> f_vocab, SymbolSet<std::string> e_vocab,
+      float alpha, float gamma, const unordered_set<string> & phonemes) {
     f_vocab_size_ = f_vocab.size();
     e_vocab_size_ = e_vocab.size();
+    phonemes_ = phonemes;
     f_vocab_ = f_vocab;
     e_vocab_ = e_vocab;
     log_alpha_ = LogWeight(-log(alpha));
@@ -40,9 +41,8 @@ public:
       counts_.push_back(counts_row);
     }
 
-    phonemes_ = phonemes;
     // Create the `empty' lexicon that allows for phonemes to pass through as-is.
-    lexicon_ = CreateEmptyLexicon(phonemes);
+    lexicon_ = CreateEmptyLexicon(phonemes_);
 
   }
 
@@ -71,7 +71,7 @@ public:
 
   // Related to the phoneme-based extensions
   vector<string> GetPhonemes(const vector<DataLatticePtr> & lattices);
-  VectorFst<LogArc> CreateEmptyLexicon(const vector<string> & phonemes);
+  VectorFst<LogArc> CreateEmptyLexicon(const unordered_set<string> & phonemes);
   VectorFst<LogArc> CreateTM(const DataLattice & lattice);
   void AddWord(VectorFst<LogArc> & lexicon, vector<WordId> phonemes, std::string phoneme_word);
   std::string PhonemeWord(vector<WordId> phonemes);
@@ -88,7 +88,7 @@ protected:
   int e_vocab_size_;
   SymbolSet<std::string> f_vocab_; // Used for both foreign words and phonemes.
   SymbolSet<std::string> e_vocab_;
-  vector<std::string> phonemes_;
+  unordered_set<std::string> phonemes_;
   LogWeight log_alpha_; //Concentration parameter for the Dirichlet process.
   LogWeight log_gamma_; //Exponent used for the spelling model.
   float gamma_;

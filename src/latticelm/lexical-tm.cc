@@ -15,7 +15,7 @@
 using namespace latticelm;
 using namespace fst;
 
-VectorFst<LogArc> LexicalTM::CreateEmptyLexicon(const vector<string> & phonemes) {
+VectorFst<LogArc> LexicalTM::CreateEmptyLexicon(const unordered_set<string> & phonemes) {
   VectorFst<LogArc> lexicon;
   VectorFst<LogArc>::StateId home = lexicon.AddState();
   lexicon.SetStart(home);
@@ -23,10 +23,10 @@ VectorFst<LogArc> LexicalTM::CreateEmptyLexicon(const vector<string> & phonemes)
 
   VectorFst<LogArc>::StateId phoneme_home = lexicon.AddState();
 
-  for(auto phoneme : phonemes_) {
-    lexicon.AddArc(home, LogArc(f_vocab_.GetId(phoneme), f_vocab_.GetId("<eps>"), 
+  for(auto it = phonemes.begin(); it != phonemes.end(); ++it ) {
+    lexicon.AddArc(home, LogArc(f_vocab_.GetId(*it), f_vocab_.GetId("<eps>"), 
         Divide(LogWeight::One(), LogWeight(-log(phonemes_.size()))), phoneme_home));
-    lexicon.AddArc(phoneme_home, LogArc(f_vocab_.GetId(phoneme), f_vocab_.GetId("<eps>"),
+    lexicon.AddArc(phoneme_home, LogArc(f_vocab_.GetId(*it), f_vocab_.GetId("<eps>"),
         Divide(log_gamma_, LogWeight(-log(phonemes_.size()))) , phoneme_home));
   }
 
