@@ -58,6 +58,8 @@ public:
   void Normalize(int epochs);
   LogWeight DirichletProb(int e, int f);
 
+  void WriteSortedCounts();
+
   // Test methods to be moved elsewhere later
   void TestLogWeightSampling();
 

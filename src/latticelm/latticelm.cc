@@ -137,6 +137,7 @@ void LatticeLM::PerformTrainingLexTM(const vector<DataLatticePtr> & all_lattices
       cerr << "align " << align_count << ", align_id: " << align_id << endl;
       cerr << "time: " << time_.Elapsed() << endl;
       align_count++;
+      tm.WriteSortedCounts();
       if(epoch != 1)
         tm.RemoveSample(alignments[align_id]);
       alignments[align_id] = tm.CreateSample(*train_lattices[align_id], ep_stats);

@@ -1,1 +1,10 @@
-libtool --mode=execute valgrind ./src/latticelm/latticelm --train_file data/phoneme-prototyping/german.lat --trans_file data/phoneme-prototyping/english.txt --epochs 2 --lattice_weight 1.0 --file_format openfst --model_type lextm --concentration 1.0 --train_len 2 --test_len 2
+#!/bin/bash
+
+DATA_DIR="$HOME/research/phoneme_lattices/clean"
+
+libtool --mode=execute valgrind ./src/latticelm/latticelm \
+		--train_file "$DATA_DIR/en.contains-buy.lat.clean" \
+		--trans_file "$DATA_DIR/en.contains-buy.txt" \
+		--train_len 96 --test_len 96 \
+		--file_format openfst --model_type lextm \
+		--epochs 2 --lattice_weight 1.0 --concentration 1.0

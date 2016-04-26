@@ -144,11 +144,14 @@ void LexicalTM::RemoveSample(const Alignment & align) {
       if(f_count_[ph_word_id] > 0) {
         f_count_[ph_word_id]--;
       }
+
+/*
       if(f_count_[ph_word_id] == 0) {
         // Then we need to remove the path from the lexicon too.
         cout << "Deleting " << phoneme_word << " states: " << lexicon_states_[ph_word_id] << endl;
         lexicon_.DeleteStates(lexicon_states_[ph_word_id]);
       }
+*/
 
       // Update the English cache.
       e_count_[arrow.second]--;
@@ -462,6 +465,8 @@ Alignment LexicalTM::CreateSample(const DataLattice & lattice, LLStats & stats) 
 
   WriteSymbolSets();
 
+  lattice.GetFst().Write("data/phoneme-prototyping/lattice.fst");
+
   // Create a translation model that constrains its options to the translation of the lattice.
   VectorFst<LogArc> tm = CreateTM(lattice);
   tm.Write("data/phoneme-prototyping/tm.fst");
@@ -644,4 +649,18 @@ vector<vector<fst::LogWeight>> LexicalTM::load_TM(const string filename) {
   */
 
   return tm;
+}
+
+void LexicalTM::WriteSortedCounts() {
+  std::ofstream f;
+  f.open("data/phoneme-prototyping/align_counts.txt");
+
+  vector<pair<pair<WordId,WordId>, int>> items;
+  for(auto it = align_count_.begin(); it != align_count_.end(); it++) {
+    //items.push_back(*it);
+    f << f_vocab_.GetSym(it->first.first) << " " << e_vocab_.GetSym(it->first.second) << " " << it->second << std::endl;
+  }
+
+  f.close();
+
 }

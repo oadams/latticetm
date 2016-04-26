@@ -71,6 +71,7 @@ vector<DataLatticePtr> DataLattice::ReadFromOpenFSTFile(const std::string & file
   VectorFst<LogArc>::StateId num_states = last_id + 1;
   VectorFst<LogArc>::StateId to_state;
   int lineid = 0;
+
   while(getline(in, line)) {
     lineid++;
     if(line == "") {
