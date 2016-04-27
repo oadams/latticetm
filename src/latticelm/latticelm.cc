@@ -143,6 +143,9 @@ void LatticeLM::PerformTrainingLexTM(const vector<DataLatticePtr> & all_lattices
       alignments[align_id] = tm.CreateSample(*train_lattices[align_id], ep_stats);
 
       tm.AddSample(alignments[align_id]);
+
+      tm.WriteSortedCounts();
+      exit(0);
     }
     cerr << "Finished epoch " << epoch << ": char=" << ep_stats.words_ << ", ppl=" << ep_stats.CalcPPL() << " (s=" << time_.Elapsed() << ")" << endl;
     //tm.ResampleParameters();
@@ -262,6 +265,8 @@ int LatticeLM::main(int argc, char** argv) {
   time_ = Timer();
   cerr << "Started training! (s=" << time_.Elapsed() << ")" << endl;
 
+  cids_.Write("data/phoneme-prototyping/f_vocab_.txt");
+
   // Create the hierarchical LM
   if(model_type_ == "pylm") {
     Pylm pylm(cids_.size(), char_n_);
@@ -271,6 +276,7 @@ int LatticeLM::main(int argc, char** argv) {
     PerformTraining(lattices, hlm);
   } else if(model_type_ == "lextm") {
     LexicalTM tm(cids_, trans_ids_, alpha_, gamma, phonemes);
+    tm.WriteSortedCounts();
     PerformTrainingLexTM(lattices, tm, vm["train_len"].as<int>(), vm["test_len"].as<int>());
   }
 

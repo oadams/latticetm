@@ -46,12 +46,14 @@ VectorFst<LogArc> LexicalTM::CreateTM(const DataLattice & lattice) {
   // Adding x:e arcs
   for(auto e : lattice.GetTranslation()) {
     // Get the total counts of e
-    int e_total = 0;
+    int e_total = e_count_[e];
+    /*
     for(auto it = align_count_.begin(); it != align_count_.end(); it++) {
       if(it->first.first == e) {
         e_total += it->second;
       }
     }
+    */
 
     // Add the <unk>:e arc.
     // Determine the probability
@@ -60,9 +62,11 @@ VectorFst<LogArc> LexicalTM::CreateTM(const DataLattice & lattice) {
     tm.AddArc(home, LogArc(f_vocab_.GetId("<unk>"), e, prob, home));
 
     // Add the f:e arcs.
-    for(auto f : lattice.GetFWordIds()) {
-      prob = Divide(LogWeight(-log(align_count_[{f,e}])), Plus(log_alpha_, LogWeight(-log(e_total))));
-      tm.AddArc(home, LogArc(f, e, prob, home));
+    for(auto it = f_count_.begin(); it != f_count_.end(); it++) {
+      if (it->second > 0) {
+        prob = Divide(LogWeight(-log(align_count_[{it->first,e}])), Plus(log_alpha_, LogWeight(-log(e_total))));
+        tm.AddArc(home, LogArc(it->first, e, prob, home));
+      }
     }
   }
 
@@ -210,6 +214,7 @@ void LexicalTM::AddSample(const Alignment & align) {
       if(align_count_.count(word_arrow) == 1 && align_count_[word_arrow] > 0) {
         align_count_[word_arrow]++;
       } else {
+        cout << word_arrow << " " << f_vocab_.GetSym(ph_word_id) << endl;
         align_count_[word_arrow] = 1;
       }
 
