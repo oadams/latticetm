@@ -662,8 +662,22 @@ void LexicalTM::WriteSortedCounts() {
 
   vector<pair<pair<WordId,WordId>, int>> items;
   for(auto it = align_count_.begin(); it != align_count_.end(); it++) {
-    //items.push_back(*it);
-    f << f_vocab_.GetSym(it->first.first) << " " << e_vocab_.GetSym(it->first.second) << " " << it->second << std::endl;
+    items.push_back(*it);
+  }
+
+  vector<pair<pair<WordId,WordId>, float>> cond_items;
+  for(auto item : items) {
+    cond_items.push_back({item.first, float(item.second)/e_count_[item.first.second]});
+  }
+
+  // Sort items by second element
+  std::sort(cond_items.begin(), cond_items.end(),
+            boost::bind(&std::pair<pair<WordId,WordId>, float>::second, _1) <
+            boost::bind(&std::pair<pair<WordId,WordId>, float>::second, _2));
+
+
+  for(auto item : cond_items) {
+    f << f_vocab_.GetSym(item.first.first) << " " << e_vocab_.GetSym(item.first.second) << " " << item.second << std::endl;
   }
 
   f.close();
