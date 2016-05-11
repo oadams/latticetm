@@ -47,13 +47,6 @@ VectorFst<LogArc> LexicalTM::CreateTM(const DataLattice & lattice) {
   for(auto e : lattice.GetTranslation()) {
     // Get the total counts of e
     int e_total = e_count_[e];
-    /*
-    for(auto it = align_count_.begin(); it != align_count_.end(); it++) {
-      if(it->first.first == e) {
-        e_total += it->second;
-      }
-    }
-    */
 
     // Add the <unk>:e arc.
     // Determine the probability

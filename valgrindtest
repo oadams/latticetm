@@ -4,8 +4,9 @@ DATA_DIR="$HOME/research/phoneme_lattices/clean"
 
 #libtool --mode=execute valgrind ./src/latticelm/latticelm \
 ./src/latticelm/latticelm \
-		--train_file "$DATA_DIR/en.lat.clean" \
-		--trans_file "$DATA_DIR/en.txt" \
-		--train_len 1000 --test_len 1000 \
+		--train_file "$DATA_DIR/en-en.en.lat" \
+		--trans_file "$DATA_DIR/en-en.en.txt" \
+		--train_len 10000 --test_len 10000 \
 		--file_format openfst --model_type lextm \
-		--epochs 10 --lattice_weight 1.0 --concentration 1.0
+		--epochs 10 --lattice_weight 1.0 --concentration 1.0 \
+#		--plain_best_paths en-en.en.1-best

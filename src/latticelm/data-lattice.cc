@@ -188,7 +188,13 @@ void DataLattice::Dijkstra(
   }
 }
 
-void DataLattice::StringFromBacktrace(const int final_state_id, const vector<int> & prev_state, const vector<pair<int,int>> & prev_align, SymbolSet<string> & dict, ostream & out_stream) {
+void DataLattice::StringFromBacktrace(
+    const int final_state_id,
+    const vector<int> & prev_state,
+    const vector<pair<int,int>> & prev_align,
+    SymbolSet<string> & dict,
+    ostream & out_stream) {
+
   int id = final_state_id;
   vector<string> foreign_source;
   while(true) {
@@ -197,8 +203,10 @@ void DataLattice::StringFromBacktrace(const int final_state_id, const vector<int
     foreign_source.push_back(dict.GetSym(wordid));
     id = prev_state[id];
   }
-  for(int i = foreign_source.size()-1; i >= 0; i--){
+  for(int i = foreign_source.size()-1; i >= 0; i--) {
+    if(foreign_source[i] != "{SIL}") {
       out_stream << foreign_source[i] << " ";
+    }
   }
   out_stream << endl;
 }
