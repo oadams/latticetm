@@ -577,33 +577,13 @@ void LexicalTM::FindBestPaths(
       VectorFst<LogArc> * shortest_path = new VectorFst<LogArc>;
       vector<int> && prev_state = vector<int>();
       vector<pair<int,int>> && prev_align = vector<pair<int,int>>();
-      DataLattice::Dijkstra(vecfst, prev_state, prev_align, f_vocab_, e_vocab_, false);
+      DataLattice::Dijkstra(vecfst, prev_state, prev_align);
 
       int final_state = DataLattice::GetFinal(composed_fst);
       DataLattice::StringFromBacktrace(final_state, prev_state, prev_align, f_vocab_, cout);
       DataLattice::AlignmentFromBacktrace(final_state, prev_state, prev_align, f_vocab_, e_vocab_, align_file);
   }
   align_file.close();
-}
-
-void LexicalTM::FindBestPlainLatticePaths(const vector<DataLatticePtr> & lattices, string out_fn) {
-    ofstream && out_file = ofstream();
-    out_file.open(out_fn);
-
-    long i = 0;
-    for (auto latticep : lattices) {
-      DataLattice lattice = *latticep;
-      vector<int> && prev_state = vector<int>();
-      vector<pair<int,int>> && prev_align = vector<pair<int,int>>();
-      if(i == -8) {
-        DataLattice::Dijkstra(lattice.GetFst(), prev_state, prev_align, f_vocab_, e_vocab_, true);
-      } else {
-        DataLattice::Dijkstra(lattice.GetFst(), prev_state, prev_align, f_vocab_, e_vocab_);
-      }
-      DataLattice::StringFromBacktrace(lattice.GetFinal(), prev_state, prev_align, f_vocab_, out_file);
-      i++;
-    }
-    out_file.close();
 }
 
 vector<vector<fst::LogWeight>> LexicalTM::load_TM(const string filename) {

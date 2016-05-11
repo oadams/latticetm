@@ -249,8 +249,10 @@ int LatticeLM::main(int argc, char** argv) {
   float gamma = 0.9;
 
   if(!vm["plain_best_paths"].as<string>().empty()) {
-    LexicalTM tm(cids_, trans_ids_, alpha_, gamma, phonemes);
-    tm.FindBestPlainLatticePaths(lattices, "data/out/" + vm["plain_best_paths"].as<string>());
+    DataLattice::FindBestPaths(
+        lattices,
+        "data/out/" + vm["plain_best_paths"].as<string>(),
+        cids_);
     return 0;
   }
 

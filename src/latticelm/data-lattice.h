@@ -40,9 +40,27 @@ public:
     return f_wordids_;
   }
 
-  static void Dijkstra(const fst::Fst<fst::LogArc> & lattice, vector<int> & prev_state, vector<pair<int,int>> & prev_align, SymbolSet<string> & dict, SymbolSet<string> & trans_dict, bool debug=false);
-  static void StringFromBacktrace(const int final_state_id, const vector<int> & prev_state, const vector<pair<int,int>> & prev_align, SymbolSet<string> & dict, ostream & out_stream);
-  static void AlignmentFromBacktrace(const int final_state_id, const vector<int> & prev_state, const vector<pair<int,int>> & prev_align, SymbolSet<string> & dict, SymbolSet<string> & trans_dict, ofstream & align_file);
+  static void Dijkstra(
+      const fst::Fst<fst::LogArc> & lattice,
+      vector<int> & prev_state,
+      vector<pair<int,int>> & prev_align);
+  static void StringFromBacktrace(
+      const int final_state_id,
+      const vector<int> & prev_state,
+      const vector<pair<int,int>> & prev_align,
+      SymbolSet<string> & dict,
+      ostream & out_stream);
+  static void AlignmentFromBacktrace(
+      const int final_state_id,
+      const vector<int> & prev_state,
+      const vector<pair<int,int>> & prev_align,
+      SymbolSet<string> & dict,
+      SymbolSet<string> & trans_dict,
+      ofstream & align_file);
+  static void FindBestPaths(
+      const vector<DataLatticePtr> & lattices,
+      const string out_fn,
+      SymbolSet<string> & dict);
 
   static int GetFinal(const fst::Fst<fst::LogArc> & fst) {
     for (StateIterator<Fst<LogArc>> iter(fst);
