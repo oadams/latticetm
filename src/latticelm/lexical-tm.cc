@@ -471,10 +471,14 @@ Alignment LexicalTM::CreateSample(const DataLattice & lattice, LLStats & stats) 
   WriteSymbolSets();
 
   lattice.GetFst().Write("data/phoneme-prototyping/lattice.fst");
+  cout << "Wrote lattice." << endl;
+
+  ArcSort(&lexicon_, ILabelCompare<LogArc>());
 
   // Create a translation model that constrains its options to the translation of the lattice.
   VectorFst<LogArc> tm = CreateTM(lattice);
   tm.Write("data/phoneme-prototyping/tm.fst");
+  cout << "Created TM" << endl;
 
   WriteSymbolSets();
 
@@ -483,6 +487,8 @@ Alignment LexicalTM::CreateSample(const DataLattice & lattice, LLStats & stats) 
   cout << "Composed lattice with lexicon..." << endl;
   VectorFst<LogArc> veclatlex(latlex);
   veclatlex.Write("data/phoneme-prototyping/latlex.fst");
+
+  ArcSort(&tm, ILabelCompare<LogArc>());
 
   ComposeFst<LogArc> composed_fst(latlex, tm);
   cout << "Composed latlex with tm..." << endl;

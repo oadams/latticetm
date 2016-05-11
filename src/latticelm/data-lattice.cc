@@ -5,6 +5,7 @@
 #include <fst/script/compile-impl.h>
 #include <iostream>
 #include <fstream>
+#include <fst/compose.h>
 
 using namespace latticelm;
 using namespace std;
@@ -112,6 +113,7 @@ vector<DataLatticePtr> DataLattice::ReadFromOpenFSTFile(const std::string & file
   }
   // Wrap up the last uncompleted lattice.
   ptr->fst_.SetFinal(to_state, LogArc::Weight::One());
+  ArcSort(&(ptr->fst_), OLabelCompare<LogArc>());
   dict.Write("data/out/lattices/isymbols.txt");
   ret.push_back(ptr);
   return ret;

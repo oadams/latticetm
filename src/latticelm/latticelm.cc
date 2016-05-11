@@ -141,7 +141,7 @@ void LatticeLM::PerformTrainingLexTM(const vector<DataLatticePtr> & all_lattices
         tm.RemoveSample(alignments[align_id]);
       alignments[align_id] = tm.CreateSample(*train_lattices[align_id], ep_stats);
 
-      if(align_count % 30 == 0) {
+      if(align_count % 100 == 0) {
         tm.WriteSortedCounts();
       }
 
