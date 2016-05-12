@@ -540,6 +540,41 @@ void LexicalTM::ResampleParameters() {
   }
 }
 
+/** Finds the best path through the lattices using the lexicon and translation model in this LexicalTM object. Therefore there is no averaging over a number of samples, the best path is just found using final cache counts.**/
+void LexicalTM::FindBestPaths(
+    const vector<DataLatticePtr> & lattices,
+    const string out_fn,
+    // Will remove this dict, since LexicalTM has f_vocab_
+    SymbolSet<string> & dict) {
+
+  ofstream && of = ofstream();
+  of.open(out_fn);
+
+  for(auto latticep : lattices) {
+    DataLattice lattice = *latticep;
+    VectorFst<LogArc> tm = CreateTM(lattice);
+
+    ArcSort(&lexicon_, ILabelCompare<LogArc>());
+    ComposeFst<LogArc> complatlex(lattice.GetFst(), lexicon_);
+    VectorFst<LogArc> latlex(complatlex);
+
+    ArcSort(&tm, ILabelCompare<LogArc>());
+    ComposeFst<LogArc> compfst(latlex, tm);
+    VectorFst<LogArc> composed(compfst);
+
+    // Find the shortest path.
+    VectorFst<LogArc> * shortest_path = new VectorFst<LogArc>;
+    vector<int> && prev_state = vector<int>();
+    vector<pair<int,int>> && prev_align = vector<pair<int,int>>();
+    DataLattice::Dijkstra(composed, prev_state, prev_align);
+    int final_state = DataLattice::GetFinal(composed);
+    DataLattice::StringFromBacktrace(
+        final_state, prev_state, prev_align, f_vocab_, of);
+  }
+
+  of.close();
+}
+
 void LexicalTM::FindBestPaths(const vector<DataLatticePtr> & lattices, string align_fn) {
   FindBestPaths(lattices, align_fn, cpd_accumulator_);
 }

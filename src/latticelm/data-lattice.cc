@@ -204,7 +204,7 @@ void DataLattice::StringFromBacktrace(
     id = prev_state[id];
   }
   for(int i = foreign_source.size()-1; i >= 0; i--) {
-    if(foreign_source[i] != "{SIL}") {
+    if(foreign_source[i] != "{SIL}" and foreign_source[i] != "<eps>") {
       out_stream << foreign_source[i] << " ";
     }
   }

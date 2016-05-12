@@ -66,6 +66,9 @@ void LatticeLM::PerformTrainingLexTM(const vector<DataLatticePtr> & all_lattices
   //tm.Normalize(epochs_);
   //tm.PrintParams("data/out/params/tm.avg");
   //tm.FindBestPaths(test_lattices, "data/out/alignments.txt");
+
+  // TODO Will need to replace this magic string, and get rid of the cids_ ref
+  tm.FindBestPaths(train_lattices, "/home/oadams/research/phoneme_lattices/data/out/stuff", cids_);
 }
 
 template <class LM>
@@ -163,7 +166,7 @@ int LatticeLM::main(int argc, char** argv) {
   if(!vm["plain_best_paths"].as<string>().empty()) {
     DataLattice::FindBestPaths(
         lattices,
-        "data/out/" + vm["plain_best_paths"].as<string>(),
+        vm["plain_best_paths"].as<string>(),
         cids_);
     return 0;
   }
