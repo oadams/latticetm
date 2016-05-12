@@ -543,9 +543,7 @@ void LexicalTM::ResampleParameters() {
 /** Finds the best path through the lattices using the lexicon and translation model in this LexicalTM object. Therefore there is no averaging over a number of samples, the best path is just found using final cache counts.**/
 void LexicalTM::FindBestPaths(
     const vector<DataLatticePtr> & lattices,
-    const string out_fn,
-    // Will remove this dict, since LexicalTM has f_vocab_
-    SymbolSet<string> & dict) {
+    const string out_fn) {
 
   ofstream && of = ofstream();
   of.open(out_fn);
@@ -573,10 +571,6 @@ void LexicalTM::FindBestPaths(
   }
 
   of.close();
-}
-
-void LexicalTM::FindBestPaths(const vector<DataLatticePtr> & lattices, string align_fn) {
-  FindBestPaths(lattices, align_fn, cpd_accumulator_);
 }
 
 /** Samples the best path through the lattice using the translations and

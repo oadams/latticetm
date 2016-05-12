@@ -37,6 +37,8 @@ protected:
   int char_n_, word_n_;
   float lattice_weight_;
   float alpha_; //A concentration parameter, if you want it.
+  float gamma_; //A parameter for the prior spelling model (ie Geometric dist or poisson dist)
+  string outfile_;
 
   Timer time_;
 

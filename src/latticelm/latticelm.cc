@@ -68,7 +68,7 @@ void LatticeLM::PerformTrainingLexTM(const vector<DataLatticePtr> & all_lattices
   //tm.FindBestPaths(test_lattices, "data/out/alignments.txt");
 
   // TODO Will need to replace this magic string, and get rid of the cids_ ref
-  tm.FindBestPaths(train_lattices, "/home/oadams/research/phoneme_lattices/data/out/stuff", cids_);
+  tm.FindBestPaths(train_lattices, outfile_);
 }
 
 template <class LM>
@@ -114,6 +114,8 @@ int LatticeLM::main(int argc, char** argv) {
       ("train_len", po::value<int>()->default_value(-1), "Number of training sents")
       ("test_len", po::value<int>()->default_value(-1), "Number of test sents")
       ("using_external_tm", po::value<string>()->default_value(""), "For using an external TM to perform decoding")
+      ("gamma", po::value<float>()->default_value(0.9), "The param for the prior(ie. Geometric spelling model)")
+      ("outfile", po::value<string>(), "Where the hypothesis will be output")
       ;
   boost::program_options::variables_map vm;
   po::store(po::parse_command_line(argc, argv, desc), vm);
@@ -135,6 +137,8 @@ int LatticeLM::main(int argc, char** argv) {
   file_format_ = vm["file_format"].as<string>();
   model_type_ = vm["model_type"].as<string>();
   alpha_ = vm["concentration"].as<float>();
+  gamma_ = vm["gamma"].as<float>();
+  outfile_ = vm["outfile"].as<string>();
 
   GlobalVars::Init(vm["verbose"].as<int>(), vm["seed"].as<int>());
 
@@ -154,14 +158,6 @@ int LatticeLM::main(int argc, char** argv) {
   // Load data
   vector<DataLatticePtr> lattices = DataLattice::ReadFromFile(file_format_, lattice_weight_, vm["train_file"].as<string>(), vm["trans_file"].as<string>(), cids_, trans_ids_, phonemes);
 
-  unordered_map<pair<WordId,WordId>, int> map;
-  pair<WordId,WordId> x (2,7);
-  map.insert({x, 5});
-
-  cout << map[x] << endl;
-
-  //Prototyping(lattices);
-  float gamma = 0.9;
 
   if(!vm["plain_best_paths"].as<string>().empty()) {
     DataLattice::FindBestPaths(
@@ -171,18 +167,20 @@ int LatticeLM::main(int argc, char** argv) {
     return 0;
   }
 
+  /*
   if(!vm["using_external_tm"].as<string>().empty()) {
     LexicalTM tm(cids_, trans_ids_, alpha_, gamma, phonemes);
     vector<vector<fst::LogWeight>> tm_params = tm.load_TM(vm["using_external_tm"].as<string>());
     tm.FindBestPaths(lattices, "data/out/external_tm_alignments.txt", tm_params);
     return 0;
   }
+  */
 
   // Create the timer
   time_ = Timer();
   cerr << "Started training! (s=" << time_.Elapsed() << ")" << endl;
 
-  cids_.Write("data/phoneme-prototyping/f_vocab_.txt");
+  //cids_.Write("data/phoneme-prototyping/f_vocab_.txt");
 
   // Create the hierarchical LM
   if(model_type_ == "pylm") {
@@ -192,8 +190,8 @@ int LatticeLM::main(int argc, char** argv) {
     HierarchicalLM hlm(cids_.size(), char_n_, word_n_);
     PerformTraining(lattices, hlm);
   } else if(model_type_ == "lextm") {
-    LexicalTM tm(cids_, trans_ids_, alpha_, gamma, phonemes);
-    tm.WriteSortedCounts();
+    LexicalTM tm(cids_, trans_ids_, alpha_, gamma_, phonemes);
+    //tm.WriteSortedCounts();
     PerformTrainingLexTM(lattices, tm, vm["train_len"].as<int>(), vm["test_len"].as<int>());
   }
 
