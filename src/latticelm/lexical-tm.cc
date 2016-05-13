@@ -666,7 +666,7 @@ vector<vector<fst::LogWeight>> LexicalTM::load_TM(const string filename) {
 
 void LexicalTM::WriteSortedCounts() {
   std::ofstream f;
-  f.open("data/phoneme-prototyping/align_counts.txt");
+  f.open("align_counts.txt");
 
   vector<pair<pair<WordId,WordId>, int>> items;
   for(auto it = align_count_.begin(); it != align_count_.end(); it++) {
@@ -693,7 +693,9 @@ void LexicalTM::WriteSortedCounts() {
 
 
   for(auto item : items) {
-    f << f_vocab_.GetSym(item.first.first) << " " << e_vocab_.GetSym(item.first.second) << " " << item.second << std::endl;
+    if(item.first.second > 0) {
+      f << f_vocab_.GetSym(item.first.first) << " " << e_vocab_.GetSym(item.first.second) << " " << item.second << std::endl;
+    }
   }
 
   f.close();
