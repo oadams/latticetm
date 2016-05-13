@@ -115,7 +115,7 @@ int LatticeLM::main(int argc, char** argv) {
       ("test_len", po::value<int>()->default_value(-1), "Number of test sents")
       ("using_external_tm", po::value<string>()->default_value(""), "For using an external TM to perform decoding")
       ("gamma", po::value<float>()->default_value(0.9), "The param for the prior(ie. Geometric spelling model)")
-      ("outfile", po::value<string>(), "Where the hypothesis will be output")
+      ("outfile", po::value<string>()->default_value(""), "Where the hypothesis will be output")
       ;
   boost::program_options::variables_map vm;
   po::store(po::parse_command_line(argc, argv, desc), vm);
