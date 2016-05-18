@@ -7,6 +7,8 @@
 #include <vector>
 #include <stdexcept>
 
+using namespace std;
+
 namespace latticelm {
 
 inline float neglogsumexp(const vector<float> & probs) {
