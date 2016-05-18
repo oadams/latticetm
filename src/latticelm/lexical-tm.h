@@ -78,6 +78,9 @@ public:
   // Related to the phoneme-based extensions
   vector<string> GetPhonemes(const vector<DataLatticePtr> & lattices);
   VectorFst<LogArc> CreateEmptyLexicon(const unordered_set<string> & phonemes);
+  VectorFst<LogArc> CreateEmptyPMPLexicon(
+    const unordered_set<string> & phonemes,
+    const vector<float> & starters);
   VectorFst<LogArc> CreateTM(const DataLattice & lattice);
   void AddWord(VectorFst<LogArc> & lexicon, vector<WordId> phonemes, std::string phoneme_word);
   std::string PhonemeWord(vector<WordId> phonemes);

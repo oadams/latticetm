@@ -15,6 +15,7 @@
 using namespace latticelm;
 using namespace fst;
 
+/** Creates an empty lexicon with a Geometric prior**/
 VectorFst<LogArc> LexicalTM::CreateEmptyLexicon(const unordered_set<string> & phonemes) {
   VectorFst<LogArc> lexicon;
   VectorFst<LogArc>::StateId home = lexicon.AddState();
@@ -26,6 +27,67 @@ VectorFst<LogArc> LexicalTM::CreateEmptyLexicon(const unordered_set<string> & ph
   for(auto it = phonemes.begin(); it != phonemes.end(); ++it ) {
     lexicon.AddArc(home, LogArc(f_vocab_.GetId(*it), f_vocab_.GetId("<eps>"), 
         Divide(LogWeight::One(), LogWeight(-log(phonemes_.size()))), phoneme_home));
+    lexicon.AddArc(phoneme_home, LogArc(f_vocab_.GetId(*it), f_vocab_.GetId("<eps>"),
+        Divide(log_gamma_, LogWeight(-log(phonemes_.size()))) , phoneme_home));
+  }
+
+  lexicon.AddArc(phoneme_home, LogArc(f_vocab_.GetId("<eps>"), f_vocab_.GetId("<unk>"),
+      LogWeight(-log(1-gamma_)), home));
+  lexicon.Write("data/phoneme-prototyping/lexicons/empty.fst");
+
+  return lexicon;
+}
+
+/** Creates an empty lexicon with a poor man's Poisson prior. starters is a
+ * list of k probabilities for P(1)..P(k). Everything thereafter is geometric
+ * according to gamma. */
+VectorFst<LogArc> LexicalTM::CreateEmptyPMPLexicon(
+    const unordered_set<string> & phonemes,
+    const vector<float> & starters) {
+
+  VectorFst<LogArc> lexicon;
+  VectorFst<LogArc>::StateId home = lexicon.AddState();
+  lexicon.SetStart(home);
+  lexicon.SetFinal(home, LogArc::Weight::One());
+
+  // Add a state for each specified probability.
+  VectorFst<LogArc>::StateId cur = lexicon.AddState();
+  for(auto it = phonemes.begin(); it != phonemes.end(); ++it ) {
+    lexicon.AddArc(home, LogArc(f_vocab_.GetId(*it), f_vocab_.GetId("<eps>"),
+        Divide(LogWeight::One(), LogWeight(-log(phonemes_.size()))), cur));
+  }
+
+  LogWeight remainder = LogWeight::One();
+  for(float prob : starters) {
+    LogWeight end_prob = Divide(Divide(prob,remainder),
+                                LogWeight(-log(phonemes_.size())));
+    lexicon.AddArc(
+        cur,
+        LogArc(
+            f_vocab_.GetId("<eps>"),
+            f_vocab_.GetId("<unk>"),
+            end_prob,
+            home));
+    remainder = LogWeight(-log(1-exp(-end_prob.Value())));
+    VectorFst<LogArc>::StateId next = lexicon.AddState();
+    for(auto it = phonemes.begin(); it != phonemes.end(); ++it) {
+      lexicon.AddArc(
+          cur,
+          LogArc(
+              f_vocab_.GetId(*it),
+              f_vocab_.GetId("<eps>"),
+              remainder,
+              next));
+    }
+    cur = next;
+  }
+
+  // Add the Geometric component.
+  VectorFst<LogArc>::StateId phoneme_home = lexicon.AddState();
+
+  for(auto it = phonemes.begin(); it != phonemes.end(); ++it ) {
+    lexicon.AddArc(cur, LogArc(f_vocab_.GetId(*it), f_vocab_.GetId("<eps>"), 
+        Divide(log_gamma_, LogWeight(-log(phonemes_.size()))), phoneme_home));
     lexicon.AddArc(phoneme_home, LogArc(f_vocab_.GetId(*it), f_vocab_.GetId("<eps>"),
         Divide(log_gamma_, LogWeight(-log(phonemes_.size()))) , phoneme_home));
   }
