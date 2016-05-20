@@ -15,8 +15,12 @@ class LexicalTM {
 
 public:
 
-  LexicalTM(SymbolSet<std::string> f_vocab, SymbolSet<std::string> e_vocab,
-      float alpha, float gamma, const unordered_set<string> & phonemes) {
+  LexicalTM(
+      SymbolSet<std::string> f_vocab,
+      SymbolSet<std::string> e_vocab,
+      float alpha, float gamma,
+      const unordered_set<string> & phonemes,
+      std::string prior) {
     f_vocab_size_ = f_vocab.size();
     e_vocab_size_ = e_vocab.size();
     phonemes_ = phonemes;
@@ -42,7 +46,12 @@ public:
     }
 
     // Create the `empty' lexicon that allows for phonemes to pass through as-is.
-    lexicon_ = CreateEmptyLexicon(phonemes_);
+    if(prior == "geom") {
+      lexicon_ = CreateEmptyLexicon(phonemes_);
+    } else if(prior == "pmp") {
+      vector<float> starters = {0.7,0.85,0.9};
+      lexicon_ = CreateEmptyPMPLexicon(phonemes_, starters);
+    }
 
   }
 
