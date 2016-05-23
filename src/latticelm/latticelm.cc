@@ -116,7 +116,9 @@ int LatticeLM::main(int argc, char** argv) {
       ("using_external_tm", po::value<string>()->default_value(""), "For using an external TM to perform decoding")
       ("gamma", po::value<float>()->default_value(0.9), "The param for the prior(ie. Geometric spelling model)")
       ("outfile", po::value<string>()->default_value(""), "Where the hypothesis will be output")
-      ("prior", po::value<string>()->default_value("geom"), "The spelling model prior. Either 'geom' or 'pmp' (poor man's Poisson)")
+      ("prior", po::value<string>()->default_value("geom"), "The spelling model prior. Either 'geom' or 'pmp' (poor man's Poisson), or 'poisson'")
+      ("lambda", po::value<float>()->default_value(0.0), "Poisson's lambda")
+      ("starters", po::value<std::vector<float> >()->multitoken(), "The first probabilities in a shifted Geometric distribution");
       ;
   boost::program_options::variables_map vm;
   po::store(po::parse_command_line(argc, argv, desc), vm);
@@ -177,6 +179,7 @@ int LatticeLM::main(int argc, char** argv) {
   }
   */
 
+
   // Create the timer
   time_ = Timer();
   cerr << "Started training! (s=" << time_.Elapsed() << ")" << endl;
@@ -192,7 +195,7 @@ int LatticeLM::main(int argc, char** argv) {
     PerformTraining(lattices, hlm);
   } else if(model_type_ == "lextm") {
     LexicalTM tm(cids_, trans_ids_, alpha_, gamma_, phonemes,
-        vm["prior"].as<string>());
+        vm["prior"].as<string>(), vm["lambda"].as<float>(), vm["starters"].as<vector<float>>());
     //tm.WriteSortedCounts();
     PerformTrainingLexTM(lattices, tm, vm["train_len"].as<int>(), vm["test_len"].as<int>());
   }

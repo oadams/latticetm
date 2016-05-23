@@ -33,9 +33,67 @@ VectorFst<LogArc> LexicalTM::CreateEmptyLexicon(const unordered_set<string> & ph
 
   lexicon.AddArc(phoneme_home, LogArc(f_vocab_.GetId("<eps>"), f_vocab_.GetId("<unk>"),
       LogWeight(-log(1-gamma_)), home));
-  lexicon.Write("data/phoneme-prototyping/lexicons/empty.fst");
+  //lexicon.Write("data/phoneme-prototyping/lexicons/empty.fst");
 
   return lexicon;
+}
+
+/** Creates an empty lexicon with a Poisson prior.*/
+VectorFst<LogArc> LexicalTM::CreateEmptyPoissonLexicon(
+    const unordered_set<string> & phonemes, float lambda) {
+
+  VectorFst<LogArc> lexicon;
+  VectorFst<LogArc>::StateId home = lexicon.AddState();
+  lexicon.SetStart(home);
+  lexicon.SetFinal(home, LogArc::Weight::One());
+
+  VectorFst<LogArc>::StateId cur = lexicon.AddState();
+  for(auto it = phonemes.begin(); it != phonemes.end(); ++it) {
+    lexicon.AddArc(
+        home,
+        LogArc(
+            f_vocab_.GetId(*it),
+            f_vocab_.GetId("<eps>"),
+            Divide(LogWeight::One(), LogWeight(-log(phonemes_.size()))),
+            cur));
+  }
+  lexicon.AddArc(
+      cur,
+      LogArc(
+          f_vocab_.GetId("<eps>"),
+          f_vocab_.GetId("<unk>"),
+          LogWeight(lambda),// We'd -log(e^(-lambda)), which is just lambda.
+          home));
+
+  for(int i=0; i<20; i++) {//We figure utterances aren't going to get to 100.
+    VectorFst<LogArc>::StateId next = lexicon.AddState();
+
+    for(auto it = phonemes.begin(); it != phonemes.end(); ++it) {
+      lexicon.AddArc(
+          cur,
+          LogArc(
+              f_vocab_.GetId(*it),
+              f_vocab_.GetId("<eps>"),
+              Divide(
+                  LogWeight(-log(pow(lambda,i)/((i==0) ? 1 : i))),
+                  LogWeight(-log(phonemes_.size()))),
+              next));
+    }
+
+    lexicon.AddArc(
+        next,
+        LogArc(
+            f_vocab_.GetId("<eps>"),
+            f_vocab_.GetId("<unk>"),
+            LogWeight(lambda),// We'd -log(e^(-lambda)), which is just lambda.
+            home));
+
+    cur = next;
+  }
+
+  lexicon.Write("../data/out/empty-lexicon.fst");
+  return lexicon;
+
 }
 
 /** Creates an empty lexicon with a poor man's Poisson prior. starters is a
@@ -50,8 +108,8 @@ VectorFst<LogArc> LexicalTM::CreateEmptyPMPLexicon(
   lexicon.SetStart(home);
   lexicon.SetFinal(home, LogArc::Weight::One());
 
-  // Add a state for each specified probability.
   VectorFst<LogArc>::StateId cur = lexicon.AddState();
+
   for(auto it = phonemes.begin(); it != phonemes.end(); ++it ) {
     lexicon.AddArc(home, LogArc(f_vocab_.GetId(*it), f_vocab_.GetId("<eps>"),
         Divide(LogWeight::One(), LogWeight(-log(phonemes_.size()))), cur));
@@ -59,8 +117,7 @@ VectorFst<LogArc> LexicalTM::CreateEmptyPMPLexicon(
 
   LogWeight remainder = LogWeight::One();
   for(float prob : starters) {
-    LogWeight end_prob = Divide(Divide(prob,remainder),
-                                LogWeight(-log(phonemes_.size())));
+    LogWeight end_prob = Divide(LogWeight(-log(prob)),remainder);
     lexicon.AddArc(
         cur,
         LogArc(
@@ -76,7 +133,8 @@ VectorFst<LogArc> LexicalTM::CreateEmptyPMPLexicon(
           LogArc(
               f_vocab_.GetId(*it),
               f_vocab_.GetId("<eps>"),
-              remainder,
+              Divide(remainder,
+                    LogWeight(-log(phonemes_.size()))),
               next));
     }
     cur = next;
@@ -517,44 +575,44 @@ VectorFst<LogArc> LexicalTM::CreateReducedTM(const DataLattice & lattice, const 
 */
 
 void LexicalTM::WriteSymbolSets() {
-  f_vocab_.Write("data/phoneme-prototyping/f_symbols.txt");
-  e_vocab_.Write("data/phoneme-prototyping/e_symbols.txt");
+  f_vocab_.Write("../data/out/f_symbols.txt");
+  e_vocab_.Write("../data/out/e_symbols.txt");
 }
 
 Alignment LexicalTM::CreateSample(const DataLattice & lattice, LLStats & stats) {
 
   WriteSymbolSets();
 
-  lattice.GetFst().Write("data/phoneme-prototyping/lattice.fst");
-  cout << "Wrote lattice." << endl;
+  //lattice.GetFst().Write("data/phoneme-prototyping/lattice.fst");
+  //cout << "Wrote lattice." << endl;
 
   ArcSort(&lexicon_, ILabelCompare<LogArc>());
 
   // Create a translation model that constrains its options to the translation of the lattice.
   VectorFst<LogArc> tm = CreateTM(lattice);
-  tm.Write("data/phoneme-prototyping/tm.fst");
-  cout << "Created TM" << endl;
+  //tm.Write("data/phoneme-prototyping/tm.fst");
+  //cout << "Created TM" << endl;
 
   WriteSymbolSets();
 
   // Compose the lattice with the lexicon.
   ComposeFst<LogArc> latlex(lattice.GetFst(), lexicon_);
   cout << "Composed lattice with lexicon..." << endl;
-  VectorFst<LogArc> veclatlex(latlex);
-  veclatlex.Write("data/phoneme-prototyping/latlex.fst");
+  //VectorFst<LogArc> veclatlex(latlex);
+  //veclatlex.Write("data/phoneme-prototyping/latlex.fst");
 
   ArcSort(&tm, ILabelCompare<LogArc>());
 
   ComposeFst<LogArc> composed_fst(latlex, tm);
   cout << "Composed latlex with tm..." << endl;
 
-  VectorFst<LogArc> vecfst(composed_fst);
-  vecfst.Write("data/phoneme-prototyping/composed.fst");
+  //VectorFst<LogArc> vecfst(composed_fst);
+  //vecfst.Write("data/phoneme-prototyping/composed.fst");
 
   // Sample from the composed Fst.
   VectorFst<LogArc> sample_fst;
   SampGen(composed_fst, sample_fst);
-  sample_fst.Write("data/phoneme-prototyping/sample.fst");
+  //sample_fst.Write("data/phoneme-prototyping/sample.fst");
   Alignment alignment = FstToAlign(sample_fst);
   PrintAlign(alignment);
 

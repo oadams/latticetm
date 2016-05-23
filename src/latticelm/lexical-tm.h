@@ -20,7 +20,9 @@ public:
       SymbolSet<std::string> e_vocab,
       float alpha, float gamma,
       const unordered_set<string> & phonemes,
-      std::string prior) {
+      std::string prior,
+      float lambda,
+      vector<float> starters) {
     f_vocab_size_ = f_vocab.size();
     e_vocab_size_ = e_vocab.size();
     phonemes_ = phonemes;
@@ -49,8 +51,9 @@ public:
     if(prior == "geom") {
       lexicon_ = CreateEmptyLexicon(phonemes_);
     } else if(prior == "pmp") {
-      vector<float> starters = {0.7,0.85,0.9};
       lexicon_ = CreateEmptyPMPLexicon(phonemes_, starters);
+    } else if(prior == "poisson") {
+      lexicon_ = CreateEmptyPoissonLexicon(phonemes_, lambda);
     }
 
   }
@@ -90,6 +93,8 @@ public:
   VectorFst<LogArc> CreateEmptyPMPLexicon(
     const unordered_set<string> & phonemes,
     const vector<float> & starters);
+  VectorFst<LogArc> CreateEmptyPoissonLexicon(
+    const unordered_set<string> & phonemes, float lambda);
   VectorFst<LogArc> CreateTM(const DataLattice & lattice);
   void AddWord(VectorFst<LogArc> & lexicon, vector<WordId> phonemes, std::string phoneme_word);
   std::string PhonemeWord(vector<WordId> phonemes);
