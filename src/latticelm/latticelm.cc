@@ -197,6 +197,7 @@ int LatticeLM::main(int argc, char** argv) {
     LexicalTM tm(cids_, trans_ids_, alpha_, gamma_, phonemes,
         vm["prior"].as<string>(), vm["lambda"].as<float>(), vm["starters"].as<vector<float>>());
     //tm.WriteSortedCounts();
+    cerr << "Blah" << endl;
     PerformTrainingLexTM(lattices, tm, vm["train_len"].as<int>(), vm["test_len"].as<int>());
   }
 

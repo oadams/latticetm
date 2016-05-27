@@ -327,7 +327,7 @@ void LexicalTM::AddSample(const Alignment & align) {
       if(align_count_.count(word_arrow) == 1 && align_count_[word_arrow] > 0) {
         align_count_[word_arrow]++;
       } else {
-        cout << word_arrow << " " << f_vocab_.GetSym(ph_word_id) << endl;
+        //cout << word_arrow << " " << f_vocab_.GetSym(ph_word_id) << endl;
         align_count_[word_arrow] = 1;
       }
 
@@ -597,14 +597,14 @@ Alignment LexicalTM::CreateSample(const DataLattice & lattice, LLStats & stats) 
 
   // Compose the lattice with the lexicon.
   ComposeFst<LogArc> latlex(lattice.GetFst(), lexicon_);
-  cout << "Composed lattice with lexicon..." << endl;
+  //cout << "Composed lattice with lexicon..." << endl;
   //VectorFst<LogArc> veclatlex(latlex);
   //veclatlex.Write("data/phoneme-prototyping/latlex.fst");
 
   ArcSort(&tm, ILabelCompare<LogArc>());
 
   ComposeFst<LogArc> composed_fst(latlex, tm);
-  cout << "Composed latlex with tm..." << endl;
+  //cout << "Composed latlex with tm..." << endl;
 
   //VectorFst<LogArc> vecfst(composed_fst);
   //vecfst.Write("data/phoneme-prototyping/composed.fst");
@@ -614,7 +614,7 @@ Alignment LexicalTM::CreateSample(const DataLattice & lattice, LLStats & stats) 
   SampGen(composed_fst, sample_fst);
   //sample_fst.Write("data/phoneme-prototyping/sample.fst");
   Alignment alignment = FstToAlign(sample_fst);
-  PrintAlign(alignment);
+  //PrintAlign(alignment);
 
   /*
   Alignment unk_alignment = PhonemeWordAlignment(align);
