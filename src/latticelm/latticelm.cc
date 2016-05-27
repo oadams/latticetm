@@ -53,10 +53,6 @@ void LatticeLM::PerformTrainingLexTM(const vector<DataLatticePtr> & all_lattices
         tm.RemoveSample(alignments[align_id]);
       alignments[align_id] = tm.CreateSample(*train_lattices[align_id], ep_stats);
 
-      if(align_count % 100 == 0) {
-        tm.WriteSortedCounts();
-      }
-
       tm.AddSample(alignments[align_id]);
     }
     cerr << "Finished epoch " << epoch << ": char=" << ep_stats.words_ << ", ppl=" << ep_stats.CalcPPL() << " (s=" << time_.Elapsed() << ")" << endl;
@@ -67,8 +63,8 @@ void LatticeLM::PerformTrainingLexTM(const vector<DataLatticePtr> & all_lattices
   //tm.PrintParams("data/out/params/tm.avg");
   //tm.FindBestPaths(test_lattices, "data/out/alignments.txt");
 
-  // TODO Will need to replace this magic string, and get rid of the cids_ ref
-  tm.FindBestPaths(train_lattices, outfile_);
+  tm.WriteSortedCounts(outfile_ + ".align_counts");
+  tm.FindBestPaths(test_lattices, outfile_);
 }
 
 template <class LM>

@@ -784,9 +784,9 @@ vector<vector<fst::LogWeight>> LexicalTM::load_TM(const string filename) {
   return tm;
 }
 
-void LexicalTM::WriteSortedCounts() {
+void LexicalTM::WriteSortedCounts(string fn) {
   std::ofstream f;
-  f.open("align_counts.txt");
+  f.open(fn);
 
   vector<pair<pair<WordId,WordId>, int>> items;
   for(auto it = align_count_.begin(); it != align_count_.end(); it++) {
