@@ -9,5 +9,5 @@ DATA_DIR="$HOME/disk/research/phoneme_lattices/data/clean"
 		--train_len 1000 --test_len 500 \
 		--file_format openfst --model_type lextm \
 		--epochs 1 --lattice_weight 1.0 --concentration 1.0 \
-		--starters 0.0001 \
+		--prior pmp --starters 0.0001 0.001\
 		--outfile testoutfile
