@@ -65,7 +65,7 @@ VectorFst<LogArc> LexicalTM::CreateEmptyPoissonLexicon(
           LogWeight(lambda),// We'd -log(e^(-lambda)), which is just lambda.
           home));
 
-  for(int i=0; i<20; i++) {//We figure utterances aren't going to get to 100.
+  for(int i=0; i<100; i++) {//We figure utterances aren't going to get to 100.
     VectorFst<LogArc>::StateId next = lexicon.AddState();
 
     for(auto it = phonemes.begin(); it != phonemes.end(); ++it) {
@@ -75,7 +75,8 @@ VectorFst<LogArc> LexicalTM::CreateEmptyPoissonLexicon(
               f_vocab_.GetId(*it),
               f_vocab_.GetId("<eps>"),
               Divide(
-                  LogWeight(-log(pow(lambda,i)/((i==0) ? 1 : i))),
+                  Divide(LogWeight(-log(lambda)),LogWeight(-log(((i==0) ? 1 : i)))),
+//                  LogWeight(-log(pow(lambda,i)/((i==0) ? 1 : i))),
                   LogWeight(-log(phonemes_.size()))),
               next));
     }
@@ -152,7 +153,7 @@ VectorFst<LogArc> LexicalTM::CreateEmptyPMPLexicon(
 
   lexicon.AddArc(phoneme_home, LogArc(f_vocab_.GetId("<eps>"), f_vocab_.GetId("<unk>"),
       LogWeight(-log(1-gamma_)), home));
-  lexicon.Write("data/phoneme-prototyping/lexicons/empty.fst");
+  //lexicon.Write("data/phoneme-prototyping/lexicons/empty.fst");
 
   return lexicon;
 }
@@ -239,7 +240,7 @@ void LexicalTM::AddWord(VectorFst<LogArc> & lexicon, vector<WordId> phonemes, st
   }
   lexicon.AddArc(cur, LogArc(f_vocab_.GetId("<eps>"), f_vocab_.GetId(phoneme_word), LogWeight::One(), home));
   WriteSymbolSets();
-  lexicon.Write("data/phoneme-prototyping/lexicon.fst");
+  //lexicon.Write("data/phoneme-prototyping/lexicon.fst");
 
   lexicon_states_[f_vocab_.GetId(phoneme_word)] = state_buf;
 }
