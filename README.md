@@ -1,8 +1,8 @@
 # latticetm
 by Oliver Adams (oliver.adams@gmail.com)
 
-This is the implementation of our [EMNLP 2016] (emnlp2016.net) paper titled:
-[Learning a Lexicon and Translation Model from Phoneme Lattices] (http://people.eng.unimelb.edu.au/tcohn/papers/adams16emnlp.pdf)
+This is the implementation of our [EMNLP 2016] (emnlp2016.net) paper titled,
+[Learning a Lexicon and Translation Model from Phoneme Lattices] (http://people.eng.unimelb.edu.au/tcohn/papers/adams16emnlp.pdf), which won the best short paper award.
 
 If you use this code, please cite the paper
 
@@ -55,8 +55,9 @@ example:
 
 The program will run and a probabilistic transcription will be output to
 data/out/transcription. Each line will be a sequence of phonemes with a space
-between each phoneme. The output is probably correct, because I'm cheeky and am
-using a magic seed for this example.
+between each phoneme (segmentation isn't currently shown in the transcript).
+The output is probably correct, because I'm cheeky and am using a magic seed
+for this example.
 
 The lattice file (in this case data/german.lat) has `n` lattices, where
 `n=train_len`. Each line specifies an arc in the form `<from> <to> <in> <out>
