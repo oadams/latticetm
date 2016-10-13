@@ -1,0 +1,31 @@
+#!/bin/bash
+
+dataset="fisher_test"
+epochs=30
+alpha=1
+weight=1
+
+WC_OUT="$(wc -l data/fisher-callhome/corpus/ldc/${dataset}.es.nopunc.lower)"
+for token in $WC_OUT; do
+	SIZE=$token
+	break
+done
+CUTS=10
+DIFF=$((SIZE/CUTS))
+
+# The number of sentences per minute
+callhome_rate=$((20875/(20*60)))
+
+for ((i=0;i<CUTS;i++)); do
+	num_sents=$((SIZE-i*DIFF))
+	printf "%b\t" $((num_sents/callhome_rate))
+	#./run $dataset $epochs $alpha $weight $num_sents
+	#./wer $dataset $epochs $alpha $weight $num_sents
+	./run_giza $dataset $num_sents
+	./decode_giza $dataset $num_sents > data/out/giza-pp/${dataset}.n${num_sents}.es
+	python ../nlp/per.py \
+			--ref data/fisher-callhome/corpus/ldc/${dataset}.es.nopunc.lower \
+			--hypo data/out/giza-pp/${dataset}.n${num_sents}.es
+done
+#./run $dataset $epochs $alpha $weight 0
+#./wer $dataset $epochs $alpha $weight 0

@@ -1,0 +1,13 @@
+#!/bin/bash
+
+DATA_DIR="$HOME/disk/research/phoneme_lattices/data/clean"
+
+#libtool --mode=execute valgrind ./src/latticelm/latticelm \
+./src/latticelm/latticelm \
+		--train_file "$DATA_DIR/dev.en-en.en.lat" \
+		--trans_file "$DATA_DIR/dev.en-en.en.txt" \
+		--train_len 1000 --test_len 500 \
+		--file_format openfst --model_type lextm \
+		--epochs 1 --lattice_weight 1.0 --concentration 1.0 \
+		--prior poisson --lambda 3 --starters 0.0001 0.001\
+		--outfile testoutfile
