@@ -1,8 +1,8 @@
 # latticetm
 by Oliver Adams (oliver.adams@gmail.com)
 
-This is the implementation of our [EMNLP 2016] (emnlp2016.net) paper titled: 
-*Learning a Lexicon and Translation Model from Phoneme Lattices*.
+This is the implementation of our [EMNLP 2016] (emnlp2016.net) paper titled:
+[Learning a Lexicon and Translation Model from Phoneme Lattices] (http://people.eng.unimelb.edu.au/tcohn/papers/adams16emnlp.pdf)
 
 If you use this code, please cite the paper
 
@@ -19,7 +19,7 @@ If you use this code, please cite the paper
 
 This program builds on the codebase of [latticelm]
 (https://github.com/neubig/latticelm-v2) by Graham Neubig in order to
-additionally perform translation modeling as well as segmentation of phonemes.
+perform translation modeling.
 
 Install
 -------
@@ -50,13 +50,13 @@ example:
 	$ --file_format openfst --model_type lextm \
 	$ --epochs 11 --concentration 1 --lattice_weight 1 \
 	$ --train_len 3 --test_len 3 \
-	$ --prior pmp --starters 0.00001 --lambda 0.75 --seed 0 \
+	$ --prior pmp --starters 0.00001 --lambda 0.75 --seed 4 \
 	$ --outfile data/out/transcription
 
 The program will run and a probabilistic transcription will be output to
-data/out/transcription. It may or may not be correct, but it's more likely to
-be correct than working with the lattices alone. The output is actually just a
-sampled alignment with the English translation removed.
+data/out/transcription. Each line will be a sequence of phonemes with a space
+between each phoneme. The output is probably correct, because I'm cheeky and am
+using a magic seed for this example.
 
 The lattice file (in this case data/german.lat) has `n` lattices, where
 `n=train_len`. Each line specifies an arc in the form `<from> <to> <in> <out>
