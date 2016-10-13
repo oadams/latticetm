@@ -40,3 +40,32 @@ correct path for openfst (likely /usr/local/ on Debian-based systems).
 
 Usage
 -----
+
+A toy dataset is available in data/. It is the same example as in the paper,
+and illustrates the formatting of input files to the program. To run this
+example:
+
+	$ ./src/latticelm/latticelm \
+	$ --train_file data/german.lat --trans_file data/english.txt \
+	$ --file_format openfst --model_type lextm \
+	$ --epochs 11 --concentration 1 --lattice_weight 1 \
+	$ --train_len 3 --test_len 3 \
+	$ --prior pmp --starters 0.00001 --lambda 0.75 --seed 0 \
+	$ --outfile data/out/transcription
+
+The program will run and a probabilistic transcription will be output to
+data/out/transcription. It may or may not be correct, but it's more likely to
+be correct than working with the lattices alone. The output is actually just a
+sampled alignment with the English translation removed.
+
+The lattice file (in this case data/german.lat) has `n` lattices, where
+`n=train_len`. Each line specifies an arc in the form `<from> <to> <in> <out>
+<prob>`. Probabilities are negative log probabilities. Blank lines delimit the
+lattices. The translation file (data/english.txt) is a list of translations
+corresponding to lattices.
+
+Unfortunately we don't have license to share the BTEC data used in results
+reported in the paper. In the coming months I will be applying this method to
+other languages and other data sets, so I look forward to including recipes for
+reproduceability. In doing so, I will endeavour to make the code more
+understandable too, so bear with me.
