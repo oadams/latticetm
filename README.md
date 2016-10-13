@@ -29,7 +29,7 @@ you are on Ubuntu/Debian linux, you can install them below:
 
     $ sudo apt-get install autotools libtool libboost-all
 
-You must install OpenFST separately.
+You must install [OpenFST] (http://www.openfst.org/) separately.
 
 Once these two packages are installed, run the following commands, specifying the
 correct path for openfst (likely /usr/local/ on Debian-based systems).
@@ -50,7 +50,7 @@ example:
 	$ --file_format openfst --model_type lextm \
 	$ --epochs 11 --concentration 1 --lattice_weight 1 \
 	$ --train_len 3 --test_len 3 \
-	$ --prior pmp --starters 0.00001 --lambda 0.75 --seed 4 \
+	$ --prior pmp --starters 0.00001 --gamma 0.75 --seed 4 \
 	$ --outfile data/out/transcription
 
 The program will run and a probabilistic transcription will be output to
@@ -61,9 +61,21 @@ for this example.
 
 The lattice file (in this case data/german.lat) has `n` lattices, where
 `n=train_len`. Each line specifies an arc in the form `<from> <to> <in> <out>
-<prob>`. Probabilities are negative log probabilities. Blank lines delimit the
+<prob>` (this is referred to as the `openfst` format). Probabilities are negative log probabilities. Blank lines delimit the
 lattices. The translation file (data/english.txt) is a list of translations
 corresponding to lattices.
+
+Other arguments include:
+- `--epochs` is the number of iterations of the corpus for sampling.
+- `--concentration` is the Dirichlet process concentration parameter (ie. alpha in the paper, giving the strength of the base distribution).
+- `--lattice_weight` tweaks how much importance is given to lattice weights. Don't worry about it, just leave it at 1.
+- `--test_len` specifies how many lines you actually want transcribed. This is useful for keeping a uniform test set that is a subset of some larger corpora. For example, we can have 1,000 test set lines, but train on larger supersets.
+- `--prior` is the spelling model prior. options are `geom` for geometric, `poisson` for poisson, and `pmp` for what is called *shifted* in the paper.
+- `--starters` is a hyperparam relevant only to `pmp` (*shifted*) prior. It is a list of k floats that specify the base probability of a word of length 1..k respectively. In the example above, there is only one probability specified to decrease the chance of words of length one. More probabilities can be entered such as `--starters 0.00001 0.1` if you want the probability of a word of length 2 to be 0.1. The remaining probability mass is distributed geometrically. `"pmp"` is an acronym for poor-man's Poisson. It is actually faster though and frequently outperforms the Poisson spelling model.
+- `--lambda` is the `poisson` hyperparam. Not included in the above example, because it uses `pmp`.
+- `--gamma` is the hyperparam that describes decay for the geometric (`geom`) distribution and the *shifted* distribution (`pmp`).
+- `--seed` is the seed for the random number generator so that certain results can be reproduced.
+- `--outfile` is the file to put the *unsegmented* automatic transcription that harnesses the provided translation.
 
 Unfortunately we don't have license to share the BTEC data used in results
 reported in the paper. In the coming months I will be applying this method to
