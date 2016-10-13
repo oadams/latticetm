@@ -1,7 +1,7 @@
 # latticetm
 by Oliver Adams (oliver.adams@gmail.com)
 
-This is the implementation of our [EMNLP 2016] (emnlp2016.net) paper titled,
+This is the implementation of our [EMNLP 2016] (emnlp2016.net) paper,
 [Learning a Lexicon and Translation Model from Phoneme Lattices] (http://people.eng.unimelb.edu.au/tcohn/papers/adams16emnlp.pdf), which won the best short paper award.
 
 If you use this code, please cite the paper
