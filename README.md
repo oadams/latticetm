@@ -27,7 +27,7 @@ Install
 First, in terms of standard libraries, you must have autotools, libtool, and Boost. If
 you are on Ubuntu/Debian linux, you can install them below:
 
-    $ sudo apt-get install autotools libtool libboost-all
+    $ sudo apt-get install autotools libtool libboost-all-dev
 
 You must install [OpenFST] (http://www.openfst.org/) separately.
 
