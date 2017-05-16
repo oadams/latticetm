@@ -3,9 +3,13 @@
 
 using namespace fst;
 
-int main()
+int main(int argc, char *argv[])
 {
-  VectorFst<LogArc> *model = VectorFst<LogArc>::Read("input.fst");
+  if (argc != 3) {
+    std::cout << "Usage: " << argv[0] << "input-LogFst output-LogFst\n";
+  }
+
+  VectorFst<LogArc> *model = VectorFst<LogArc>::Read(argv[1]);
 
   // Create a new final state.
   LogArc::StateId final_state_id = model->AddState();
@@ -30,5 +34,5 @@ int main()
 
   model->SetFinal(final_state_id, LogWeight::One());
 
-  model->Write("output.fst");
+  model->Write(argv[2]);
 }
