@@ -27,6 +27,11 @@ public:
   static std::vector<DataLatticePtr> ReadFromOpenFSTFile(const std::string & filename, float weight, SymbolSet<std::string> & dict, std::unordered_set<std::string> & phonemes);
   static void ReadTranslations(vector<DataLatticePtr> data_lattices, const string & trans_filename, SymbolSet<std::string> & trans_dict);
 
+  static DataLatticePtr ReadFromOpenFSTBinary(
+      const std::string & filename, SymbolSet<std::string> & dict,
+      std::unordered_set<std::string> & phonemes);
+  static void ReadSymbolTable(const std::string & filename, SymbolSet<std::string> & dict);
+
   const VectorFst<LogArc> & GetFst() const { return fst_; }
 
   const Sentence GetTranslation() const {

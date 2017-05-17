@@ -49,6 +49,33 @@ vector<DataLatticePtr> DataLattice::ReadFromTextFile(const std::string & filenam
   return ret;
 }
 
+DataLatticePtr DataLattice::ReadFromOpenFSTBinary(
+  const std::string & filename,
+  SymbolSet<string> & dict,
+  unordered_set<string> & phonemes) {
+  /** Reads a lattice from an OpenFST binary. **/
+
+  VectorFst<LogArc> *fst = VectorFst<LogArc>::Read(filename);
+  DataLatticePtr ptr(new DataLattice);
+  ptr->fst_ = *fst;
+  return ptr;
+}
+
+void DataLattice::ReadSymbolTable(const std::string & filename,
+                                    SymbolSet<string> & dict) {
+  /** Reads a symboltable from an OpenFst style symbol txt file.**/
+  string line;
+  ifstream in(filename);
+  if(!in) THROW_ERROR("Could not open " << filename);
+  while(getline(in, line)) {
+    vector<string> line_tokens;
+    boost::split(line_tokens, line, boost::is_any_of("\t "), boost::token_compress_on);
+    WordId in = dict.GetId(line_tokens[0]);
+    assert(in == stoi(line_tokens[1]));
+    cout << in << " " << line_tokens[1] << "\n";
+  }
+}
+
 vector<DataLatticePtr> DataLattice::ReadFromOpenFSTFile(const std::string & filename, float weight, SymbolSet<string> & dict, unordered_set<string> & phonemes) {
   /** Be wary of the assumptions this method makes:
     *   - The input file includes some number of FSTs, each of which is separated by a blank line.

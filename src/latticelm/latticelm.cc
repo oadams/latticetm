@@ -124,6 +124,9 @@ int LatticeLM::main(int argc, char** argv) {
       return 1;
   }
 
+  DataLattice::ReadSymbolTable("/home/oadams/mam/exp/238/lattice/symbols.txt",cids_);
+  return 0;
+
   // Temporary buffers
   string line;
 
