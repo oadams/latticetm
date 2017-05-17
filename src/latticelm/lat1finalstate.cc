@@ -26,7 +26,7 @@ int main(int argc, char *argv[])
     if (model->Final(state_id) != LogWeight::Zero()) {
       LogWeight weight = model->Final(state_id);
       // Add an arc to the new final state.
-      model->AddArc(state_id, LogArc(0, 0, weight, final_state_id));
+      model->AddArc(state_id, LogArc(0, 0, 0.5, final_state_id));
       // Make the state non-final.
       model->SetFinal(state_id, LogWeight::Zero());
     }

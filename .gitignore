@@ -36,6 +36,7 @@ gmon.out
 missing
 src/latticelm/latticelm
 src/latticelm/lat1finalstate
+src/latticelm/latsample
 src/latticelm/config.h
 src/test/test-latticelm
 test-driver

@@ -30,9 +30,10 @@ LDADD=liblatticelm.la \
     $(BOOST_SERIALIZATION_LIB) \
     $(BOOST_IOSTREAMS_LIB)
 
-bin_PROGRAMS = latticelm lat1finalstate
+bin_PROGRAMS = latticelm lat1finalstate latsample
 
 latticelm_SOURCES = latticelm-main.cc
 latticelm_LDADD = $(LDADD)
 
 lat1finalstate_SOURCES = lat1finalstate.cc
+latsample_SOURCES = latsample.cc
