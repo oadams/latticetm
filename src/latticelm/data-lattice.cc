@@ -62,7 +62,8 @@ DataLatticePtr DataLattice::ReadFromOpenFSTBinary(
 }
 
 void DataLattice::ReadSymbolTable(const std::string & filename,
-                                    SymbolSet<string> & dict) {
+                                    SymbolSet<string> & dict,
+                                    unordered_set<string> & phonemes) {
   /** Reads a symboltable from an OpenFst style symbol txt file.**/
   string line;
   ifstream in(filename);
@@ -72,7 +73,11 @@ void DataLattice::ReadSymbolTable(const std::string & filename,
     boost::split(line_tokens, line, boost::is_any_of("\t "), boost::token_compress_on);
     WordId in = dict.GetId(line_tokens[0]);
     assert(in == stoi(line_tokens[1]));
-    cout << in << " " << line_tokens[1] << "\n";
+    // Haven't pruned out '<bl>' and 'pad' but if they aren't occurring in the
+    // lattices then it shouldn't matter anyway.
+    if (line_tokens[0] != "<eps>") {
+      phonemes.insert(line_tokens[0]);
+    }
   }
 }
 

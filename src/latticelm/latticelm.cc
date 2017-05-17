@@ -124,9 +124,6 @@ int LatticeLM::main(int argc, char** argv) {
       return 1;
   }
 
-  DataLattice::ReadSymbolTable("/home/oadams/mam/exp/238/lattice/symbols.txt",cids_);
-  return 0;
-
   // Temporary buffers
   string line;
 
@@ -144,6 +141,11 @@ int LatticeLM::main(int argc, char** argv) {
 
   GlobalVars::Init(vm["verbose"].as<int>(), vm["seed"].as<int>());
 
+  unordered_set<std::string> phonemes;
+  DataLattice::ReadSymbolTable("/home/oadams/mam/exp/238/lattice/symbols.txt",
+                              cids_, phonemes);
+  return 0;
+
   // Initialize the vocabulary
   cids_.GetId("<eps>");
   cids_.GetId("<unk>");
@@ -154,8 +156,6 @@ int LatticeLM::main(int argc, char** argv) {
   trans_ids_.GetId("<eps>");
   //trans_ids_.GetId("<s>");
   //trans_ids_.GetId("</s>");
-
-  unordered_set<std::string> phonemes;
 
   // Load data
   vector<DataLatticePtr> lattices = DataLattice::ReadFromFile(file_format_, lattice_weight_, vm["train_file"].as<string>(), vm["trans_file"].as<string>(), cids_, trans_ids_, phonemes);

@@ -30,7 +30,8 @@ public:
   static DataLatticePtr ReadFromOpenFSTBinary(
       const std::string & filename, SymbolSet<std::string> & dict,
       std::unordered_set<std::string> & phonemes);
-  static void ReadSymbolTable(const std::string & filename, SymbolSet<std::string> & dict);
+  static void ReadSymbolTable(const std::string & filename,
+      SymbolSet<std::string> & dict, unordered_set<string> & phonemes);
 
   const VectorFst<LogArc> & GetFst() const { return fst_; }
 
