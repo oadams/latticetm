@@ -142,8 +142,9 @@ int LatticeLM::main(int argc, char** argv) {
   GlobalVars::Init(vm["verbose"].as<int>(), vm["seed"].as<int>());
 
   unordered_set<std::string> phonemes;
-  DataLattice::ReadSymbolTable("/home/oadams/mam/exp/238/lattice/symbols.txt",
-                              cids_, phonemes);
+  DataLattice::ReadFromListOfOpenFSTBinaries("lattice_fns.txt",
+                                             cids_, phonemes);
+
   return 0;
 
   // Initialize the vocabulary

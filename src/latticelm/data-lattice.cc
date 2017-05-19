@@ -50,9 +50,7 @@ vector<DataLatticePtr> DataLattice::ReadFromTextFile(const std::string & filenam
 }
 
 DataLatticePtr DataLattice::ReadFromOpenFSTBinary(
-  const std::string & filename,
-  SymbolSet<string> & dict,
-  unordered_set<string> & phonemes) {
+  const std::string & filename) {
   /** Reads a lattice from an OpenFST binary. **/
 
   VectorFst<LogArc> *fst = VectorFst<LogArc>::Read(filename);
@@ -79,6 +77,25 @@ void DataLattice::ReadSymbolTable(const std::string & filename,
       phonemes.insert(line_tokens[0]);
     }
   }
+}
+
+vector<DataLatticePtr> DataLattice::ReadFromListOfOpenFSTBinaries(
+    const std::string & filename,
+    SymbolSet<string> & dict, unordered_set<string> & phonemes) {
+    /** In this case, filename refers to a file that lists all the lattices.**/
+
+  vector<DataLatticePtr> ret;
+  string line;
+  ifstream in(filename);
+  if(!in) THROW_ERROR("Could not open " << filename);
+  while(getline(in, line)) {
+    vector<string> line_tokens;
+    boost::split(line_tokens, line, boost::is_any_of("\t "), boost::token_compress_on);
+    string lat_fn = line_tokens[0];
+    cout << lat_fn << "\n";
+    ret.push_back(ReadFromOpenFSTBinary(lat_fn));
+  }
+  return ret;
 }
 
 vector<DataLatticePtr> DataLattice::ReadFromOpenFSTFile(const std::string & filename, float weight, SymbolSet<string> & dict, unordered_set<string> & phonemes) {

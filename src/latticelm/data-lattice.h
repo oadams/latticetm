@@ -27,11 +27,12 @@ public:
   static std::vector<DataLatticePtr> ReadFromOpenFSTFile(const std::string & filename, float weight, SymbolSet<std::string> & dict, std::unordered_set<std::string> & phonemes);
   static void ReadTranslations(vector<DataLatticePtr> data_lattices, const string & trans_filename, SymbolSet<std::string> & trans_dict);
 
-  static DataLatticePtr ReadFromOpenFSTBinary(
-      const std::string & filename, SymbolSet<std::string> & dict,
-      std::unordered_set<std::string> & phonemes);
+  static DataLatticePtr ReadFromOpenFSTBinary(const std::string & filename);
   static void ReadSymbolTable(const std::string & filename,
       SymbolSet<std::string> & dict, unordered_set<string> & phonemes);
+  static vector<DataLatticePtr> ReadFromListOfOpenFSTBinaries(
+    const std::string & filename,
+    SymbolSet<string> & dict, unordered_set<string> & phonemes);
 
   const VectorFst<LogArc> & GetFst() const { return fst_; }
 
