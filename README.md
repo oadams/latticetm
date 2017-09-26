@@ -1,9 +1,8 @@
 # latticetm
-by Oliver Adams (oliver.adams@gmail.com), building on the codebase of [latticelm]
-(https://github.com/neubig/latticelm-v2) by Graham Neubig.
+by Oliver Adams (oliver.adams@gmail.com), building on the codebase of [latticelm](https://github.com/neubig/latticelm-v2) by Graham Neubig.
 
 This is the implementation of our [EMNLP 2016] (emnlp2016.net) paper,
-[Learning a Lexicon and Translation Model from Phoneme Lattices] (http://people.eng.unimelb.edu.au/tcohn/papers/adams16emnlp.pdf), which won the best short paper award.
+[Learning a Lexicon and Translation Model from Phoneme Lattices](http://people.eng.unimelb.edu.au/tcohn/papers/adams16emnlp.pdf), which won the best short paper award.
 
 If you use this code, please cite the paper
 
