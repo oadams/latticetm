@@ -17,7 +17,7 @@ If you use this code, please cite the paper
 }
 ```
 
-This program builds on the codebase of [latticelm] (https://github.com/neubig/latticelm-v2) in order to
+This program builds on the codebase of [latticelm](https://github.com/neubig/latticelm-v2) in order to
 perform translation modeling.
 
 Install
@@ -28,7 +28,7 @@ you are on Ubuntu/Debian linux, you can install them below:
 
     $ sudo apt-get install autotools libtool libboost-all-dev
 
-You must install [OpenFST] (http://www.openfst.org/) separately.
+You must install [OpenFST](http://www.openfst.org/) separately.
 
 Once these two packages are installed, run the following commands, specifying the
 correct path for openfst (likely /usr/local/ on Debian-based systems).
