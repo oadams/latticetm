@@ -30,7 +30,7 @@ public:
   static DataLatticePtr ReadFromOpenFSTBinary(const std::string & filename);
   static void ReadSymbolTable(const std::string & filename,
       SymbolSet<std::string> & dict, unordered_set<string> & phonemes);
-  static vector<DataLatticePtr> ReadFromListOfOpenFSTBinaries(
+  static std::vector<DataLatticePtr> ReadFromListOfOpenFSTBinaries(
     const std::string & filename,
     SymbolSet<string> & dict, unordered_set<string> & phonemes);
 

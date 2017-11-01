@@ -91,6 +91,7 @@ int LatticeLM::main(int argc, char** argv) {
   po::options_description desc("*** latticelm (by Graham Neubig) ***");
   desc.add_options()
       ("help", "Produce help message")
+      ("symbol_file", po::value<string>()->default_value(""), "Symbol file")
       ("train_file", po::value<string>()->default_value(""), "Training file")
       ("train_ref", po::value<string>()->default_value(""), "Training reference file containing true phoneme strings (optional)")
       ("trans_file", po::value<string>()->default_value(""), "File containing word-tokenized translations of the training lattices in plain text.")
@@ -142,9 +143,15 @@ int LatticeLM::main(int argc, char** argv) {
   GlobalVars::Init(vm["verbose"].as<int>(), vm["seed"].as<int>());
 
   unordered_set<std::string> phonemes;
-  DataLattice::ReadFromListOfOpenFSTBinaries("lattice_fns.txt",
+  vector<DataLatticePtr> lattices = DataLattice::ReadFromListOfOpenFSTBinaries(
+                                            vm["train_file"].as<string>(),
                                              cids_, phonemes);
+  DataLattice::ReadSymbolTable(vm["symbol_file"].as<string>(), cids_, phonemes);
+  DataLattice::FindBestPaths(lattices, "best_paths.txt", cids_);
 
+  for(auto item : phonemes) {
+    cout << item;
+  };
   return 0;
 
   // Initialize the vocabulary
@@ -159,7 +166,7 @@ int LatticeLM::main(int argc, char** argv) {
   //trans_ids_.GetId("</s>");
 
   // Load data
-  vector<DataLatticePtr> lattices = DataLattice::ReadFromFile(file_format_, lattice_weight_, vm["train_file"].as<string>(), vm["trans_file"].as<string>(), cids_, trans_ids_, phonemes);
+  //vector<DataLatticePtr> lattices = DataLattice::ReadFromFile(file_format_, lattice_weight_, vm["train_file"].as<string>(), vm["trans_file"].as<string>(), cids_, trans_ids_, phonemes);
 
 
   if(!vm["plain_best_paths"].as<string>().empty()) {
