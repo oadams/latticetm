@@ -22,10 +22,10 @@ public:
   DataLattice() { }
   ~DataLattice() { }
  
-  static std::vector<DataLatticePtr> ReadFromFile(const std::string & format, float weight, const std::string & filename, const std::string & trans_filename, SymbolSet<std::string> & dict, SymbolSet<std::string> & trans_dict, unordered_set<std::string> & phonemes);
+  static std::vector<DataLatticePtr> ReadFromFile(const std::string & format, float weight, const std::string & filename, const std::string & trans_filename, SymbolSet<std::string> & dict, SymbolSet<std::string> & trans_dict, std::unordered_set<std::string> & phonemes);
   static std::vector<DataLatticePtr> ReadFromTextFile(const std::string & filename, float weight, SymbolSet<std::string> & dict);
   static std::vector<DataLatticePtr> ReadFromOpenFSTFile(const std::string & filename, float weight, SymbolSet<std::string> & dict, std::unordered_set<std::string> & phonemes);
-  static void ReadTranslations(vector<DataLatticePtr> data_lattices, const string & trans_filename, SymbolSet<std::string> & trans_dict);
+  static void ReadTranslations(std::vector<DataLatticePtr> data_lattices, const std::string & trans_filename, SymbolSet<std::string> & trans_dict);
 
   const VectorFst<LogArc> & GetFst() const { return fst_; }
 
@@ -36,31 +36,31 @@ public:
     translation_ = translation;
   }
 
-  const set<WordId> GetFWordIds() const {
+  const std::set<WordId> GetFWordIds() const {
     return f_wordids_;
   }
 
   static void Dijkstra(
       const fst::Fst<fst::LogArc> & lattice,
-      vector<int> & prev_state,
-      vector<pair<int,int>> & prev_align);
+      std::vector<int> & prev_state,
+      std::vector<std::pair<int,int>> & prev_align);
   static void StringFromBacktrace(
       const int final_state_id,
-      const vector<int> & prev_state,
-      const vector<pair<int,int>> & prev_align,
-      SymbolSet<string> & dict,
-      ostream & out_stream);
+      const std::vector<int> & prev_state,
+      const std::vector<std::pair<int,int>> & prev_align,
+      SymbolSet<std::string> & dict,
+      std::ostream & out_stream);
   static void AlignmentFromBacktrace(
       const int final_state_id,
-      const vector<int> & prev_state,
-      const vector<pair<int,int>> & prev_align,
-      SymbolSet<string> & dict,
-      SymbolSet<string> & trans_dict,
-      ofstream & align_file);
+      const std::vector<int> & prev_state,
+      const std::vector<std::pair<int,int>> & prev_align,
+      SymbolSet<std::string> & dict,
+      SymbolSet<std::string> & trans_dict,
+      std::ofstream & align_file);
   static void FindBestPaths(
-      const vector<DataLatticePtr> & lattices,
-      const string out_fn,
-      SymbolSet<string> & dict);
+      const std::vector<DataLatticePtr> & lattices,
+      const std::string out_fn,
+      SymbolSet<std::string> & dict);
 
   static int GetFinal(const fst::Fst<fst::LogArc> & fst) {
     for (StateIterator<Fst<LogArc>> iter(fst);
@@ -82,10 +82,10 @@ protected:
   fst::VectorFst<LogArc> fst_;
   // A word-tokenized English translation for building translation models.
   Sentence translation_;
-  // A set of WordIds on the foreign side that indicate foreign tokens that
+  // A std::set of WordIds on the foreign side that indicate foreign tokens that
   // occur in this lattice. This is used to optimize the creation of reduced
   // TMs for composition so that they don't have any superfluous arcs.
-  set<WordId> f_wordids_;
+  std::set<WordId> f_wordids_;
 
 };
 

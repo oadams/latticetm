@@ -20,9 +20,9 @@ public:
   int main(int argc, char** argv);
 
   template <class LM>
-  void PerformTraining(const vector<DataLatticePtr> & lattices, LM & lm);
-  void PerformTrainingLexTM(const vector<DataLatticePtr> & lattices, LexicalTM & lm, int train_len, int test_len);
-  void Prototyping(const vector<DataLatticePtr> & lattices);
+  void PerformTraining(const std::vector<DataLatticePtr> & lattices, LM & lm);
+  void PerformTrainingLexTM(const std::vector<DataLatticePtr> & lattices, LexicalTM & lm, int train_len, int test_len);
+  void Prototyping(const std::vector<DataLatticePtr> & lattices);
   
 protected:
 
@@ -38,7 +38,7 @@ protected:
   float lattice_weight_;
   float alpha_; //A concentration parameter, if you want it.
   float gamma_; //A parameter for the prior spelling model (ie Geometric dist or poisson dist)
-  string outfile_;
+  std::string outfile_;
 
   Timer time_;
 

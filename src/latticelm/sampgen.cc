@@ -11,7 +11,7 @@ unsigned SampleWeights(vector<float> & ws, float anneal) {
     return 0;
   }
 
-  float minWeight = fst::numeric_limits<float>::infinity(), weightTotal = 0;
+  float minWeight = std::numeric_limits<float>::infinity(), weightTotal = 0;
   unsigned i;
   for (i = 0; i < ws.size(); i++) {
     ws[i] *= anneal;

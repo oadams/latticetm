@@ -23,7 +23,7 @@ public:
   PylmStateLink(int s, WordId w, int cust) : sid(s), wid(w), customers(cust,1), total_customers(cust) { }
   int sid;
   WordId wid;
-  vector<int> customers;
+  std::vector<int> customers;
   int total_customers;
 };
 
@@ -31,11 +31,11 @@ class PylmState {
 public:
   PylmState(WordId w, int l, int p) : wid(w), level(l), backoff_sid(p), children(), total_customers(0), total_tables(0) { }
 
-  float CalcProb(const PylmStateLink & link, const pair<float,float> & param) {
+  float CalcProb(const PylmStateLink & link, const std::pair<float,float> & param) {
     return (link.total_customers-link.customers.size()*param.second)/(total_customers+param.first);
   }
 
-  PylmWordProbState CalcWPS(const PylmStateLink & link, const pair<float,float> & param) {
+  PylmWordProbState CalcWPS(const PylmStateLink & link, const std::pair<float,float> & param) {
     return PylmWordProbState(link.wid, CalcProb(link,param), link.sid);
   }
 
@@ -48,14 +48,14 @@ public:
   WordId wid;
   int level;
   int backoff_sid;
-  vector<PylmStateLink> children;
+  std::vector<PylmStateLink> children;
   int total_customers, total_tables;
 };
 
 class Pylm {
 
 public:
-  Pylm(int base_size, int order) : states_(1, PylmState(-1, 0, -1)), base_size_(base_size), order_(order), init_state_id_(0), params_(order, pair<float,float>(1.0, 0.1)) {
+  Pylm(int base_size, int order) : states_(1, PylmState(-1, 0, -1)), base_size_(base_size), order_(order), init_state_id_(0), params_(order, std::pair<float,float>(1.0, 0.1)) {
     GetChildStateId(0, 1, true); // Get "<s>"
     GetChildStateId(0, 2, true); // and "</s>"
   }
@@ -87,16 +87,16 @@ public:
   std::vector<PylmState> & GetStates() { return states_; }
 
   // Remove or add a sample to the statistics
-  void RemoveSample(const Sentence & sent, vector<bool> & fellback);
-  void AddSample(const Sentence & sent, const vector<float> & bases, vector<bool> & fellback);
+  void RemoveSample(const Sentence & sent, std::vector<bool> & fellback);
+  void AddSample(const Sentence & sent, const std::vector<float> & bases, std::vector<bool> & fellback);
 
   void RemoveSample(const Sentence & sent) { 
-    vector<bool> fellback;
+    std::vector<bool> fellback;
     RemoveSample(sent, fellback);
   }
   void AddSample(const Sentence & sent) {
-    vector<float> bases;
-    vector<bool> fellback;
+    std::vector<float> bases;
+    std::vector<bool> fellback;
     AddSample(sent, bases, fellback);
   }
 
@@ -116,7 +116,7 @@ protected:
   
   int init_state_id_;
 
-  vector<pair<float,float> > params_;
+  std::vector<std::pair<float,float> > params_;
 
 };
 
