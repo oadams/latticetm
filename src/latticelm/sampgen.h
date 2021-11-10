@@ -33,7 +33,7 @@ float SampGen(const fst::Fst<A> & ifst, fst::MutableFst<A> & ofst, unsigned nbes
   // sanity check
   if(ifst.Start() == -1)
     THROW_ERROR("Attempting to sample an empty FST");
-  if(ifst.Final(ifst.Start()) != fst::numeric_limits<float>::infinity())
+  if(ifst.Final(ifst.Start()) != std::numeric_limits<float>::infinity())
     THROW_ERROR("Sampling FSTs where start states are final is not supported yet");
 
   // the number of remaining incoming arcs, and total weights of each state
@@ -91,7 +91,7 @@ float SampGen(const fst::Fst<A> & ifst, fst::MutableFst<A> & ofst, unsigned nbes
     S s = siter.Value();
     // cerr << "stateWeights[" << s << "] == " << stateWeights[s].Value() << endl;
     float w = Times(ifst.Final(s),stateWeights[s]).Value();
-    if(w != fst::numeric_limits<float>::infinity()) {
+    if(w != std::numeric_limits<float>::infinity()) {
       // cout << "Final state "<<s<<","<<w<<endl;
       stateCandWeights.push_back( w );
       stateCandIds.push_back( s );

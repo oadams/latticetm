@@ -19,10 +19,10 @@ public:
       SymbolSet<std::string> f_vocab,
       SymbolSet<std::string> e_vocab,
       float alpha, float gamma,
-      const unordered_set<string> & phonemes,
+      const std::unordered_set<std::string> & phonemes,
       std::string prior,
       float lambda,
-      vector<float> starters) {
+      std::vector<float> starters) {
     f_vocab_size_ = f_vocab.size();
     e_vocab_size_ = e_vocab.size();
     phonemes_ = phonemes;
@@ -32,11 +32,11 @@ public:
     log_gamma_ = LogWeight(-log(gamma));
     gamma_ = gamma;
 
-    // Zero the count vectors. Assign uniform log probabilities to the CPD
+    // Zero the count std::vectors. Assign uniform log probabilities to the CPD
     for(int i=0; i < e_vocab_size_; i++) {
-      vector<fst::LogWeight> cpd_accumulator_row;
-      vector<fst::LogWeight> base_dist_row;
-      vector<int> counts_row;
+      std::vector<fst::LogWeight> cpd_accumulator_row;
+      std::vector<fst::LogWeight> base_dist_row;
+      std::vector<int> counts_row;
       for(int j=0; j < f_vocab_size_; j++) {
         cpd_accumulator_row.push_back(fst::LogWeight::Zero());
         base_dist_row.push_back(fst::LogWeight(-log(1.0/f_vocab_size_)));
@@ -63,41 +63,41 @@ public:
   Alignment CreateSample(const DataLattice & lat, LLStats & stats);
   void ResampleParameters();
   fst::VectorFst<fst::LogArc> CreateReducedTM(const DataLattice & lattice);
-  fst::VectorFst<fst::LogArc> CreateReducedTM(const DataLattice & lattice, const vector<vector<fst::LogWeight>> & cpd);
-  void FindBestPaths(const vector<DataLatticePtr> & lattices, string align_fn);
-  void FindBestPaths(const vector<DataLatticePtr> & lattices, string align_fn, const vector<vector<fst::LogWeight>> cpd);
+  fst::VectorFst<fst::LogArc> CreateReducedTM(const DataLattice & lattice, const std::vector<std::vector<fst::LogWeight>> & cpd);
+  void FindBestPaths(const std::vector<DataLatticePtr> & lattices, std::string align_fn);
+  void FindBestPaths(const std::vector<DataLatticePtr> & lattices, std::string align_fn, const std::vector<std::vector<fst::LogWeight>> cpd);
   void FindBestPaths(
-      const vector<DataLatticePtr> & lattices,
-      const string out_fn,
+      const std::vector<DataLatticePtr> & lattices,
+      const std::string out_fn,
       // Will remove this dict, since LexicalTM has f_vocab_
-      SymbolSet<string> & dict);
+      SymbolSet<std::string> & dict);
   void Normalize(int epochs);
   LogWeight DirichletProb(int e, int f);
 
-  void WriteSortedCounts(string fn);
+  void WriteSortedCounts(std::string fn);
 
   // Test methods to be moved elsewhere later
   void TestLogWeightSampling();
 
   // Helpful methods
-  void PrintParams(string path);
-  void PrintAvgParams(string path);
-  void PrintParams(vector<vector<fst::LogWeight>> cpd, string path);
+  void PrintParams(std::string path);
+  void PrintAvgParams(std::string path);
+  void PrintParams(std::vector<std::vector<fst::LogWeight>> cpd, std::string path);
   void PrintCounts();
 
-  vector<vector<fst::LogWeight>> load_TM(const string filename);
+  std::vector<std::vector<fst::LogWeight>> load_TM(const std::string filename);
 
   // Related to the phoneme-based extensions
-  vector<string> GetPhonemes(const vector<DataLatticePtr> & lattices);
-  VectorFst<LogArc> CreateEmptyLexicon(const unordered_set<string> & phonemes);
+  std::vector<std::string> GetPhonemes(const std::vector<DataLatticePtr> & lattices);
+  VectorFst<LogArc> CreateEmptyLexicon(const std::unordered_set<std::string> & phonemes);
   VectorFst<LogArc> CreateEmptyPMPLexicon(
-    const unordered_set<string> & phonemes,
-    const vector<float> & starters);
+    const std::unordered_set<std::string> & phonemes,
+    const std::vector<float> & starters);
   VectorFst<LogArc> CreateEmptyPoissonLexicon(
-    const unordered_set<string> & phonemes, float lambda);
+    const std::unordered_set<std::string> & phonemes, float lambda);
   VectorFst<LogArc> CreateTM(const DataLattice & lattice);
-  void AddWord(VectorFst<LogArc> & lexicon, vector<WordId> phonemes, std::string phoneme_word);
-  std::string PhonemeWord(vector<WordId> phonemes);
+  void AddWord(VectorFst<LogArc> & lexicon, std::vector<WordId> phonemes, std::string phoneme_word);
+  std::string PhonemeWord(std::vector<WordId> phonemes);
   Alignment PhonemeWordAlignment(const Alignment & ph_alignment);
   LogWeight DirichletProbNew(WordId e, WordId f);
   Alignment AssignUnks(const Alignment & unk_alignment, const Sentence & translation);
@@ -111,18 +111,18 @@ protected:
   int e_vocab_size_;
   SymbolSet<std::string> f_vocab_; // Used for both foreign words and phonemes.
   SymbolSet<std::string> e_vocab_;
-  unordered_set<std::string> phonemes_;
+  std::unordered_set<std::string> phonemes_;
   LogWeight log_alpha_; //Concentration parameter for the Dirichlet process.
   LogWeight log_gamma_; //Exponent used for the spelling model.
   float gamma_;
 
   // A grid that stores the sampling of the CPD at each iteration and gets
   // normalized after all the sampling is complete.
-  vector<vector<fst::LogWeight>> cpd_accumulator_;
+  std::vector<std::vector<fst::LogWeight>> cpd_accumulator_;
   // A uniform base distribution that the Dirichlet process will use.
-  vector<vector<fst::LogWeight>> base_dist_;
+  std::vector<std::vector<fst::LogWeight>> base_dist_;
   // The number of times we've seen a Foreign WordId align to an English WordId.
-  vector<vector<int>> counts_;
+  std::vector<std::vector<int>> counts_;
 
   // Keys are pairs of foreign and English WordIds and values are couns of how
   // often the foreign word is aligned to the English word

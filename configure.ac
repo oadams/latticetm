@@ -53,7 +53,7 @@ AC_TYPE_SIZE_T
 AC_LANG([C++])
 AC_CHECK_HEADERS([tr1/unordered_map])
 AC_CHECK_HEADERS([ext/hash_map])
-CXXFLAGS="$CXXFLAGS -std=c++11"
+CXXFLAGS="$CXXFLAGS -std=c++17"
 
 # Check if we have rt/boost
 AX_BOOST_BASE([1.49], , AC_MSG_ERROR([Boost 1.49 or later is required]))
