@@ -30,7 +30,7 @@ AC_ARG_WITH(openfst,
 	[openfst_dir="${withval}"], [openfst_dir=''])
 if test "x$openfst_dir" != "x"; then
   OPENFST_CPPFLAGS="-I${openfst_dir}/src/include"
-  OPENFST_LDFLAGS="-L${openfst_dir}/src/lib -lfst"
+  OPENFST_LDFLAGS="-L${openfst_dir}/src/lib"
 else
   AS_ERROR("Must specify --with-openfst=[OPENFST_DIR]")
 fi
@@ -54,6 +54,8 @@ AC_LANG([C++])
 AC_CHECK_HEADERS([tr1/unordered_map])
 AC_CHECK_HEADERS([ext/hash_map])
 CXXFLAGS="$CXXFLAGS -std=c++17"
+CPPFLAGS="$CPPFLAGS $OPENFST_CPPFLAGS"
+LDFLAGS="$LDFLAGS $OPENFST_LDFLAGS"
 
 # Check if we have rt/boost
 AX_BOOST_BASE([1.49], , AC_MSG_ERROR([Boost 1.49 or later is required]))
