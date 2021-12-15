@@ -12,8 +12,7 @@ LIBCPP = \
   sampgen.cc
 
 
-# AM_CXXFLAGS = $(BOOST_CPPFLAGS) $(OPENFST_CPPFLAGS) -I$(srcdir)/..
-AM_CXXFLAGS = $(BOOST_CPPFLAGS) -I$(srcdir)/..  -I/home/oadams/tools/openfst-1.6.2/src/include
+AM_CXXFLAGS = $(BOOST_CPPFLAGS) -I$(srcdir)/..
 
 lib_LTLIBRARIES = liblatticelm.la
 
@@ -23,7 +22,7 @@ liblatticelm_la_LDFLAGS = -version-info 0:0:0
 ####### Binary info
 
 LDADD=liblatticelm.la \
-    -L/home/oadams/tools/openfst-1.6.2/src/lib -lfst \
+    -lfst \
     $(BOOST_LDFLAGS) \
     $(BOOST_SYSTEM_LIB) \
     $(BOOST_PROGRAM_OPTIONS_LIB) \
